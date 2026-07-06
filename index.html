@@ -12,6 +12,25 @@
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
+/* ─── GUEST & ADMIN ─── */
+.player-chip.guest{background:rgba(177,78,255,.15);border-color:#b14eff;color:#b14eff;}
+.player-chip.guest.active{background:#b14eff;color:#fff;}
+.guest-session-bar{background:rgba(177,78,255,.08);border:1px solid #b14eff;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;color:#b14eff;display:none;text-align:center;}
+#admin-modal .admin-section{background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:10px;}
+#admin-modal .admin-section-title{font-size:11px;color:var(--cyan);font-family:var(--pixel);letter-spacing:.05em;margin-bottom:8px;}
+.admin-player-row{display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg2);border-radius:6px;margin-bottom:6px;flex-wrap:wrap;}
+.admin-player-row .apname{flex:1;font-size:12px;font-weight:700;}
+.admin-player-row .appwd{font-family:monospace;font-size:11px;color:var(--cyan);background:var(--bg);padding:2px 6px;border-radius:4px;}
+.admin-player-row .apxp{font-size:11px;color:var(--amber);}
+.admin-btn{font-size:10px;padding:4px 8px;border-radius:4px;cursor:pointer;border:1px solid;font-family:var(--pixel);}
+.admin-btn.red{border-color:var(--red);color:var(--red);background:transparent;}
+.admin-btn.amber{border-color:var(--amber);color:var(--amber);background:transparent;}
+.admin-badge{font-size:9px;background:#b14eff;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;}
+#guest-modal-form, #guest-modal-login{display:block;}
+.guest-tab-bar{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:12px;}
+.guest-tab{flex:1;padding:9px;text-align:center;font-size:11px;font-family:var(--pixel);color:var(--text2);cursor:pointer;background:transparent;border:none;}
+.guest-tab.sel{background:var(--bg3);color:var(--cyan);}
+
 
 :root{--bg:#080810;--bg2:#0d0d1a;--bg3:#12121f;--bg4:#1a1a2e;--border:#1e1e3a;--border2:#2a2a50;--text:#c8c8e8;--text2:#7070a0;--text3:#3a3a60;--cyan:#00f5ff;--cyan-dim:rgba(0,245,255,.08);--purple:#a855f7;--purple-dim:rgba(168,85,247,.1);--green:#39ff14;--green-dim:rgba(57,255,20,.08);--red:#ff3b3b;--red-dim:rgba(255,59,59,.1);--yellow:#ffd700;--yellow-dim:rgba(255,215,0,.08);--pixel:'Press Start 2P',monospace;--mono:'JetBrains Mono',monospace;--r:6px;--r2:10px;}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -276,15 +295,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
     <p style="font-size:11px;color:var(--cyan);margin-bottom:.5rem">&#201;tape 3 &mdash; Cr&#233;er un Bin vide ({}) sur jsonbin.io, copier son ID :</p>
     <input type="text" id="jsonbin-id-input" placeholder="Bin ID (ex: 65a1b2c3...)" />
     <button class="modal-btn" onclick="saveJsonbinConfig()">&#128190; ACTIVER LE CLASSEMENT PARTAG&#201;</button>
-    <button class="modal-btn sec" id="jsonbin-full-sync-btn" onclick="syncFullProfileToCloud()" style="display:none">&#9729; SAUVEGARDER MON PROFIL COMPLET (cloud)</button>
-    <button class="modal-btn sec" id="jsonbin-full-restore-btn" onclick="restoreFullProfileFromCloud()" style="display:none">&#11015; RESTAURER MON PROFIL DEPUIS LE CLOUD</button>
     <button class="modal-btn sec" onclick="closeJsonbinModal()">PLUS TARD</button>
     <span class="modal-link">Sans cette config, le classement reste local &#224; cet appareil.</span>
-    <hr style="border-color:var(--border);margin:.75rem 0">
-    <p style="font-size:11px;color:var(--text2);margin-bottom:.5rem">Ou exporte/importe ton profil en fichier .json (sans compte) :</p>
-    <button class="modal-btn sec" onclick="exportProfileJSON()">&#128190; EXPORTER MON PROFIL (.json)</button>
-    <input type="file" id="import-json-input" accept="application/json" style="display:none" onchange="importProfileJSON(event)">
-    <button class="modal-btn sec" onclick="document.getElementById('import-json-input').click()">&#128194; IMPORTER UN PROFIL (.json)</button>
   </div>
 </div>
 
@@ -304,6 +316,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <div class="map-title">&#9876; CYBERQUEST &#9876;</div>
   <div class="map-sub">52 semaines &middot; 6 zones &middot; QCM g&#233;n&#233;r&#233;s par IA</div>
   <div class="player-switch" id="playerswitch"></div>
+  <div class="guest-session-bar" id="guest-bar">👤 Mode Guest — XP local, non visible dans le classement</div>
   <div class="player-card">
     <div class="pc-top">
       <div class="pc-avatar" id="pcav">&#128163;</div>
@@ -316,7 +329,6 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
       <div class="pc-stat"><span class="v" id="psdn">0</span><span class="l">Missions</span></div>
       <div class="pc-stat"><span class="v" id="pspct">0%</span><span class="l">Global</span></div>
     </div>
-    <div id="tier-display" class="tier-display"></div>
   </div>
   <div class="streak-row">
     <div class="sr-num" id="srnum">&#128293; 0</div>
@@ -328,28 +340,21 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
       <div class="lb-title">&#127942; CLASSEMENT</div>
       <div style="display:flex;gap:6px">
         <button class="api-btn" onclick="showJsonbinModal()" style="font-size:7px">&#9729; Sync</button>
-        <button class="api-btn" onclick="showPlayerModal()" style="font-size:7px">&#128100; G&#233;rer</button>
+        <button class="api-btn" id="gerer-btn" onclick="onGererClick()" style="font-size:7px">&#128100; G&#233;rer</button>
       </div>
     </div>
     <div class="lb-list" id="lblist"></div>
   </div>
   <div class="reset-link"><button onclick="showReset()">&#x21BA; reset progression du joueur actuel</button></div>
-  <div class="zones-wrap">
-    <h3>// CHOISIR UNE ZONE &mdash; COURS &amp; QCM (priorit&#233;)</h3>
-    <div class="zones-grid" id="zonesgrid"></div>
-  </div>
-  <div class="bonus-card">
-    <div class="bonus-header">
-      <div class="bonus-title">&#127918; SC&#201;NARIOS DU SOIR (en bonus, apr&#232;s tes cours)</div>
-    </div>
-    <p style="font-size:10px;color:var(--text2);margin:0 0 .6rem">Un mini-cours puis une mini-aventure &#224; choix, pour souffler entre deux zones. Termine pour d&#233;bloquer un QCM bonus.</p>
-    <div class="zones-grid" id="scenariogrid"></div>
-  </div>
   <div class="bonus-card">
     <div class="bonus-header">
       <div class="bonus-title">&#127942; QU&#202;TES BONUS</div>
     </div>
     <div id="bonuslist"></div>
+  </div>
+  <div class="zones-wrap">
+    <h3>// CHOISIR UNE ZONE</h3>
+    <div class="zones-grid" id="zonesgrid"></div>
   </div>
 </div>
 
@@ -373,16 +378,6 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <div class="lbody">
     <div id="courscontent"></div>
     <div id="qcmcontent" style="display:none"></div>
-  </div>
-</div>
-
-<div id="scenario-screen" class="screen">
-  <div class="lhdr">
-    <button class="back-btn" onclick="goMap()">&#9664; MAP</button>
-    <div class="lh-title" id="scenhtitle">&mdash;</div>
-  </div>
-  <div class="lbody">
-    <div id="scenariocontent"></div>
   </div>
 </div>
 
@@ -541,6 +536,13 @@ function renderPlayerSwitch(){
   var addBtn=document.createElement('button');addBtn.className='player-chip-add';addBtn.textContent='+';
   addBtn.addEventListener('click',showPlayerModal);
   c.appendChild(addBtn);
+  // Chip Guest
+  var gChip=document.createElement('div');
+  gChip.className='player-chip guest'+(guestMode?' active':'');
+  gChip.innerHTML='<span class="pico">👤</span><span>'+(guestMode?guestProfile.name:'Guest')+'</span>';
+  if(guestMode){var gb=document.createElement('span');gb.textContent='✕';gb.style.cssText='margin-left:4px;font-size:10px;opacity:.7';gb.addEventListener('click',function(e){e.stopPropagation();exitGuestMode();});gChip.appendChild(gb);}
+  gChip.addEventListener('click',function(){if(!guestMode)showGuestModal();});
+  c.appendChild(gChip);
 }
 
 function getPlayerStats(pid){
@@ -595,9 +597,6 @@ function loadJsonbinConfig(){
 function showJsonbinModal(){
   document.getElementById('jsonbin-key-input').value=jsonbinKey||'';
   document.getElementById('jsonbin-id-input').value=jsonbinId||'';
-  var hasCloud=!!(jsonbinKey&&jsonbinId);
-  document.getElementById('jsonbin-full-sync-btn').style.display=hasCloud?'block':'none';
-  document.getElementById('jsonbin-full-restore-btn').style.display=hasCloud?'block':'none';
   el('jsonbinmodal').classList.add('show');
 }
 function closeJsonbinModal(){el('jsonbinmodal').classList.remove('show');}
@@ -617,7 +616,13 @@ function saveJsonbinConfig(){
 
 async function syncLeaderboardToCloud(){
   if(!jsonbinKey||!jsonbinId)return;
+  // Lire le bin existant pour preserver les guests
   var payload={};
+  try{
+    var existing=await fetch('https://api.jsonbin.io/v3/b/'+jsonbinId+'/latest',{headers:{'X-Master-Key':jsonbinKey}});
+    if(existing.ok){var ex=await existing.json();var exRec=ex.record||{};Object.keys(exRec).forEach(function(k){if(k.startsWith('g_')||k==='_config')payload[k]=exRec[k];});}
+  }catch(e){}
+  // Joueurs locaux seulement
   Object.keys(players).forEach(function(pid){
     var stats=getPlayerStats(pid);
     payload[pid]={name:players[pid].name,avatar:players[pid].avatar,xp:stats.xp,done:stats.done,streak:stats.streak,updatedAt:Date.now()};
@@ -643,122 +648,6 @@ async function fetchLeaderboardFromCloud(){
   }catch(e){return null;}
 }
 
-// --- Sauvegarde complete du profil (joueurs + progression) dans un bin JSON dedie ---
-var JSONBIN_PROFILE_ID_STORE='cq6_jsonbin_profile_id';
-
-function getOrCreateProfileBinId(){
-  try{
-    var id=localStorage.getItem(JSONBIN_PROFILE_ID_STORE+'_'+currentPlayerId);
-    return id;
-  }catch(e){return null;}
-}
-function setProfileBinId(id){
-  try{localStorage.setItem(JSONBIN_PROFILE_ID_STORE+'_'+currentPlayerId,id);}catch(e){}
-}
-
-function buildFullProfile(){
-  var raw=localStorage.getItem(getStateKey());
-  var s=raw?JSON.parse(raw):state;
-  return {
-    version:1,
-    exportedAt:Date.now(),
-    player:players[currentPlayerId],
-    playerId:currentPlayerId,
-    state:s
-  };
-}
-
-async function syncFullProfileToCloud(){
-  if(!jsonbinKey||!jsonbinId){toast('Configure d\u2019abord la cl\u00E9 et le Bin ID !');return;}
-  var profile=buildFullProfile();
-  var binId=getOrCreateProfileBinId();
-  try{
-    if(binId){
-      await fetch('https://api.jsonbin.io/v3/b/'+binId,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json','X-Master-Key':jsonbinKey},
-        body:JSON.stringify(profile)
-      });
-    }else{
-      var resp=await fetch('https://api.jsonbin.io/v3/b',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-Master-Key':jsonbinKey,'X-Bin-Name':'cq6_profile_'+currentPlayerId},
-        body:JSON.stringify(profile)
-      });
-      var data=await resp.json();
-      if(data.metadata&&data.metadata.id){
-        setProfileBinId(data.metadata.id);
-      }
-    }
-    toast('\u2601\uFE0F Profil complet sauvegard\u00E9 dans le cloud !');
-  }catch(e){
-    toast('Erreur de sauvegarde cloud.');
-  }
-}
-
-async function restoreFullProfileFromCloud(){
-  var binId=getOrCreateProfileBinId();
-  if(!binId){toast('Aucune sauvegarde cloud trouv\u00E9e pour ce joueur. Sauvegarde d\u2019abord !');return;}
-  try{
-    var resp=await fetch('https://api.jsonbin.io/v3/b/'+binId+'/latest',{
-      headers:{'X-Master-Key':jsonbinKey}
-    });
-    if(!resp.ok){toast('Impossible de r\u00E9cup\u00E9rer la sauvegarde.');return;}
-    var data=await resp.json();
-    var profile=data.record;
-    applyImportedProfile(profile);
-    toast('\u2601\uFE0F Profil restaur\u00E9 depuis le cloud !');
-  }catch(e){
-    toast('Erreur de restauration cloud.');
-  }
-}
-
-function applyImportedProfile(profile){
-  if(!profile||!profile.state)return;
-  if(profile.player){
-    players[currentPlayerId]=Object.assign({},players[currentPlayerId],profile.player);
-    savePlayers();
-  }
-  try{
-    localStorage.setItem(getStateKey(),JSON.stringify(profile.state));
-  }catch(e){}
-  load();
-  updateApiBtn();
-  renderMap();
-}
-
-function exportProfileJSON(){
-  var profile=buildFullProfile();
-  var blob=new Blob([JSON.stringify(profile,null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download='cyberquest_profil_'+(players[currentPlayerId]?players[currentPlayerId].name:'joueur')+'.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast('\uD83D\uDCBE Profil export\u00E9 en .json !');
-}
-
-function importProfileJSON(evt){
-  var file=evt.target.files&&evt.target.files[0];
-  if(!file)return;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      var profile=JSON.parse(e.target.result);
-      applyImportedProfile(profile);
-      toast('\uD83D\uDCC2 Profil import\u00E9 avec succ\u00E8s !');
-      closeJsonbinModal();
-    }catch(err){
-      toast('Fichier JSON invalide.');
-    }
-  };
-  reader.readAsText(file);
-  evt.target.value='';
-}
-
 var BONUS_QUESTS=[
   {id:'bq1',title:'S\u00E9rie de 3 jours',desc:'Maintiens un streak de 3 jours cons\u00E9cutifs',xp:50,topic:'La r\u00E9gularit\u00E9 en cybers\u00E9curit\u00E9 et veille technique',check:function(){return (state.streak||0)>=3;}},
   {id:'bq2',title:'S\u00E9rie de 7 jours',desc:'Maintiens un streak de 7 jours cons\u00E9cutifs',xp:150,topic:'La veille s\u00E9curit\u00E9 quotidienne (CVE, CERT-FR, blogs)',check:function(){return (state.streak||0)>=7;}},
@@ -768,228 +657,6 @@ var BONUS_QUESTS=[
   {id:'bq6',title:'Marathon',desc:'Valide 15 missions au total',xp:300,topic:'Tenir un effort long terme en apprentissage technique',check:function(){return totalDone()>=15;}},
   {id:'bq7',title:'Ma\u00EEtre du r\u00E9seau',desc:'Termine la zone Network Fortress',xp:200,topic:'Synth\u00E8se r\u00E9seau : TCP/IP, Cisco, Wireshark, VLAN',check:function(){var z=ZONES.find(function(z){return z.id==='reseau';});return z&&z.weeks.every(function(w){return state.done[z.id+'_'+w.n];});}},
 ];
-
-
-// ============ SCENARIOS DU SOIR (mini-aventures a choix, inspirees de jeux en ligne) ============
-var SCENARIOS=[
-  {
-    id:'fortnite',title:'Alerte sur le serveur Fortnite',icon:'🪂',color:'#9b5de5',xp:120,
-    tagline:'Un message louche promet des V-Bucks gratuits a toute l\u2019escouade.',
-    intro:'COURS RAPIDE \u2014 LE PHISHING\n\nLe phishing (hame\u00E7onnage) consiste a se faire passer pour une source de confiance (un jeu, une banque, un ami) pour voler des identifiants ou de l\u2019argent. Dans le gaming, c\u2019est l\u2019une des arnaques les plus frequentes : faux generateurs de monnaie virtuelle, faux sites de connexion, faux cadeaux.\n\n3 signaux d\u2019alerte a retenir :\n1. Une urgence artificielle ("offre limitee", "avant la fin de la saison")\n2. Un lien externe qui imite mal ou trop bien un site officiel\n3. Une demande d\u2019identifiants ou de mot de passe en dehors de l\u2019application officielle\n\nLa regle d\u2019or : aucune entreprise legitime ne te demande ton mot de passe par un lien recu dans un chat ou un message.',
-    topic:'Phishing, ingenierie sociale et triche dans les jeux en ligne competitifs',
-    steps:[
-      {situation:'Ce soir, en pleine partie squad, un message s\u2019affiche dans le chat : "Clique ici pour 5000 V-Bucks gratuits avant la fin de la saison !" avec un lien bizarre. Ton coequipier veut cliquer tout de suite. Que fais-tu ?',
-       choices:[
-         {label:'Je clique vite avant que l\u2019offre expire',correct:false,feedback:'Mauvaise pioche. Les offres "gratuites" avec un lien externe sont quasi toujours du phishing : le site copie l\u2019interface Epic Games pour voler ton identifiant et ton mot de passe. Une fois le compte vole, il sert a arnaquer d\u2019autres joueurs ou a revendre le skin.'},
-         {label:'Je dis au groupe que c\u2019est une arnaque et je ne clique pas',correct:true,feedback:'Exactement. Aucune offre legitime ne demande de cliquer un lien externe pour des V-Bucks gratuits. Le seul endroit fiable pour acheter de la monnaie virtuelle, c\u2019est le launcher officiel du jeu.'}
-       ]},
-      {situation:'Cinq minutes plus tard, ton coequipier a quand meme clique et te dit que le site lui demande son identifiant Epic Games ET son mot de passe pour "verifier son compte". Que lui conseilles-tu ?',
-       choices:[
-         {label:'De rentrer ses identifiants, c\u2019est juste pour verifier',correct:false,feedback:'Non ! Aucun site legitime ne demande ton mot de passe en dehors du launcher officiel. C\u2019est exactement le mecanisme du phishing : recuperer des identifiants pour pirater le compte ensuite.'},
-         {label:'De fermer la page immediatement et de changer son mot de passe par precaution',correct:true,feedback:'Bon reflexe. Fermer la page, ne RIEN saisir, et changer le mot de passe (avec la 2FA si possible) au cas ou il aurait deja tape quelque chose ailleurs. Mieux vaut une minute de precaution qu\u2019un compte perdu.'}
-       ]},
-      {situation:'Le lendemain, tu vois dans les commentaires que plusieurs joueurs de ton serveur Discord ont ete victimes du meme lien et que leurs comptes ont ete pirates pour spammer ce lien a leurs amis. Quelle est la bonne action a partager avec la communaute ?',
-       choices:[
-         {label:'Rien, ce n\u2019est pas mon probleme',correct:false,feedback:'Pas ideal : signaler une arnaque qui se propage protege toute la communaute, c\u2019est un reflexe de base en cybersecurite (sensibilisation collective).'},
-         {label:'Signaler le lien aux modos Discord et expliquer comment reconnaitre le phishing',correct:true,feedback:'Tres bien. Signaler + expliquer (lien externe, fausse urgence, demande de mot de passe) aide a casser la chaine de propagation. C\u2019est ce qu\u2019on appelle de la sensibilisation, un reflexe cle en cybersecurite.'}
-       ]}
-    ],
-    outro:'Mission terminee ! Tu as compris les bases du phishing et de l\u2019ingenierie sociale dans un contexte gaming bien reel. Pret pour le QCM bonus ?'
-  },
-  {
-    id:'roblox',title:'L\u2019exploiteur dans le jeu Roblox',icon:'🧱',color:'#e2231a',xp:120,
-    tagline:'Un joueur a trouve un moyen de tricher dans ton experience Roblox.',
-    intro:'COURS RAPIDE \u2014 NE JAMAIS FAIRE CONFIANCE AU CLIENT\n\nDans un jeu en ligne, le "client" est le programme qui tourne sur l\u2019ordinateur du joueur. Un joueur malveillant peut le modifier (on parle d\u2019exploit) pour changer ce qu\u2019il voit ou ce qu\u2019il envoie au serveur : argent, position, degats.\n\nC\u2019est pourquoi la regle de base en developpement de jeux en ligne est : "never trust the client". Toute donnee sensible (score, monnaie, vie) doit etre calculee et verifiee par le serveur, jamais simplement acceptee telle quelle depuis le client.\n\nCette regle s\u2019applique a tous les services en ligne : un serveur ne doit jamais faire confiance aveuglement a ce qu\u2019un utilisateur lui envoie.',
-    topic:'Securite cote serveur, exploits client et confiance zero dans les jeux en ligne',
-    steps:[
-      {situation:'Tu codes un mini-jeu Roblox avec un ami. Pendant un test, un joueur affiche soudain 999 999 pieces alors qu\u2019il vient de commencer. Ton ami pense que c\u2019est juste un bug d\u2019affichage. Toi, tu penses que c\u2019est...',
-       choices:[
-         {label:'Probablement un exploit : il a modifie son client pour tricher',correct:true,feedback:'Exact. Sur Roblox comme sur la plupart des jeux en ligne, un joueur peut modifier son client (exploit) pour changer ce qu\u2019il voit ou envoie. C\u2019est pour ca que la regle d\u2019or est : ne jamais faire confiance au client.'},
-         {label:'Un bug d\u2019affichage sans gravite, on laisse comme ca',correct:false,feedback:'Risque sous-estime. Si le compteur de pieces est aussi faux cote serveur (pas juste affiche), ce joueur peut acheter n\u2019importe quoi dans le jeu avec de la fausse monnaie. Il faut verifier d\u2019ou vient la valeur affichee.'}
-       ]},
-      {situation:'Vous regardez le code et vous trouvez que le nombre de pieces est stocke et modifie directement par un script cote CLIENT (LocalScript), envoye ensuite au serveur sans aucune verification. Quelle est la bonne correction ?',
-       choices:[
-         {label:'Deplacer le calcul et le stockage des pieces sur le serveur, qui valide chaque gain',correct:true,feedback:'C\u2019est la bonne pratique : toute donnee sensible (argent, score, vie) doit etre calculee et stockee cote serveur. Le client ne fait que des suggestions que le serveur verifie avant d\u2019accepter.'},
-         {label:'Ajouter juste un message d\u2019avertissement "ne pas tricher" dans le jeu',correct:false,feedback:'Ca ne resout rien techniquement : un avertissement n\u2019empeche pas un exploiteur de modifier son client. Il faut une vraie protection cote serveur.'}
-       ]},
-      {situation:'Apres la correction, un autre joueur tente quand meme d\u2019envoyer un faux montant de pieces au serveur via un RemoteEvent modifie. Le serveur doit reagir comment ?',
-       choices:[
-         {label:'Verifier que le montant recu respecte les regles du jeu, et rejeter / ignorer toute valeur anormale',correct:true,feedback:'Parfait reflexe defensif : le serveur valide systematiquement chaque donnee recue (montant raisonnable, action possible a cet instant) avant de l\u2019appliquer. C\u2019est le principe de validation cote serveur.'},
-         {label:'Accepter la valeur car le joueur est "probablement" honnete',correct:false,feedback:'Jamais de confiance par defaut. En securite, on part du principe que toute donnee venant du client peut etre fausse, et on la verifie systematiquement.'}
-       ]}
-    ],
-    outro:'Bravo, capitaine ! Tu viens de proteger ton experience Roblox comme un vrai developpeur securite. Pret pour le QCM bonus ?'
-  },
-  {
-    id:'minecraft',title:'Intrusion sur le serveur Minecraft',icon:'⛏️',color:'#5b8731',xp:120,
-    tagline:'Quelqu\u2019un a detruit la base de la guilde cette nuit sur le serveur.',
-    intro:'COURS RAPIDE \u2014 R\u00C9PONSE A INCIDENT\n\nQuand un service informatique (serveur de jeu, site web, ordinateur) subit un probleme, on enquete avec des preuves, pas des impressions. Les LOGS sont l\u2019historique de toutes les actions effectuees : qui s\u2019est connecte, quand, et quoi fait.\n\n3 reflexes de base pour proteger un serveur :\n1. Whitelist : limiter l\u2019acces aux personnes autorisees uniquement\n2. Sauvegardes regulieres : pouvoir restaurer un etat propre en cas de probleme\n3. Logs actifs : pouvoir enqueter et comprendre ce qui s\u2019est passe\n\nCes 3 principes (controle d\u2019acces, sauvegarde, journalisation) sont au coeur de l\u2019administration systeme et reseau en cybersecurite.',
-    topic:'Administration securisee de serveur, journalisation et reponse a incident',
-    steps:[
-      {situation:'Tu te connectes sur ton serveur Minecraft entre potes et tu decouvres que toute votre base a ete dynamitee pendant la nuit. Personne n\u2019admet avoir fait ca. Quelle est la premiere chose a faire ?',
-       choices:[
-         {label:'Accuser au hasard le joueur le moins actif du groupe',correct:false,feedback:'Mauvaise methode : sans preuve, accuser au hasard cree des tensions inutiles et ne resout rien. En securite, on enquete avec des faits, pas des suppositions.'},
-         {label:'Consulter les logs du serveur (qui s\u2019est connecte, quand, quelles actions)',correct:true,feedback:'Exactement la bonne reaction. Les logs serveur (et un plugin comme CoreProtect) enregistrent qui a fait quoi et quand. C\u2019est la base de toute reponse a incident : on part des preuves, pas des impressions.'}
-       ]},
-      {situation:'Les logs montrent qu\u2019un compte "Steve_Admin2" inconnu de tout le monde s\u2019est connecte a 3h du matin et a place des blocs de TNT. Personne du groupe ne connait ce pseudo. D\u2019ou vient probablement l\u2019intrusion ?',
-       choices:[
-         {label:'Le serveur n\u2019avait pas de whitelist : n\u2019importe qui pouvait se connecter depuis Internet',correct:true,feedback:'Tres probable. Sans whitelist (liste blanche de joueurs autorises), un serveur ouvert sur Internet est scanne et rejoint par des inconnus en quelques heures. C\u2019est l\u2019equivalent d\u2019une porte laissee grande ouverte.'},
-         {label:'C\u2019est forcement un bug du jeu, ca arrive tout seul',correct:false,feedback:'Peu probable : un pseudo inconnu qui place des TNT a 3h du matin, ce n\u2019est pas un bug, c\u2019est une connexion non autorisee bien reelle.'}
-       ]},
-      {situation:'Vous decidez de securiser le serveur pour la suite. Quelle est la meilleure combinaison de mesures ?',
-       choices:[
-         {label:'Activer la whitelist, faire des sauvegardes automatiques regulieres, et garder les logs actifs',correct:true,feedback:'Parfait ! Whitelist = seuls les joueurs autorises entrent. Sauvegardes regulieres = on peut restaurer en cas de probleme. Logs actifs = on peut enqueter si ca recommence. Trois piliers classiques de la securite d\u2019un service.'},
-         {label:'Changer juste le nom du serveur, ca suffira',correct:false,feedback:'Inutile : changer le nom ne bloque pas les connexions. Il faut de vraies mesures techniques (whitelist, sauvegardes, logs).'}
-       ]}
-    ],
-    outro:'Le serveur est desormais securise et la guilde peut rebatir en confiance. Pret pour le QCM bonus ?'
-  },
-  {
-    id:'vaillant',title:'Le defi du Vaillant',icon:'🛡️',color:'#f5c518',xp:150,
-    tagline:'Une mission de synthese pour clore une belle soiree cyber.',
-    intro:'COURS RAPIDE \u2014 L\u2019ETHIQUE DU HACKER\n\nTrouver une faille de securite ne donne jamais le droit de l\u2019exploiter sans autorisation, meme par curiosite. C\u2019est ce qu\u2019on appelle le hacking ethique : tester ou observer un systeme uniquement dans un cadre autorise (lab, programme officiel, accord ecrit).\n\nQuand on decouvre une faille par hasard, le bon reflexe s\u2019appelle la divulgation responsable : signaler le probleme au responsable du systeme, sans l\u2019exploiter ni le rendre public avant correction. C\u2019est exactement ce que font les professionnels via les programmes de "bug bounty" ou le CERT-FR.\n\nEn equipe (CTF, projet), l\u2019organisation (roles, communication) compte autant que la technique.',
-    topic:'Ethique du hacking, methodologie et esprit d\u2019equipe en cybersecurite',
-    steps:[
-      {situation:'Un ami te dit avoir trouve une faille sur le site web de son lycee (il peut voir les notes d\u2019autres eleves en modifiant l\u2019URL). Il te propose d\u2019aller "explorer un peu plus" pour voir jusqu\u2019ou ca va. Que lui reponds-tu ?',
-       choices:[
-         {label:'On y va, juste pour voir, personne ne le saura',correct:false,feedback:'Mauvaise voie. Exploiter une faille sans autorisation, meme "juste pour voir", est illegal (acces a un systeme informatique sans autorisation) et peut avoir de lourdes consequences, meme pour un mineur.'},
-         {label:'On arrete tout de suite et on signale la faille au lycee ou a un adulte responsable',correct:true,feedback:'C\u2019est exactement le reflexe du Vaillant : signaler une faille sans l\u2019exploiter s\u2019appelle la divulgation responsable. C\u2019est ce que font les vrais professionnels de la cybersecurite (bug bounty, CERT-FR).'}
-       ]},
-      {situation:'Le responsable informatique du lycee vous remercie et corrige la faille. Il vous demande comment vous l\u2019avez trouvee, pour comprendre et eviter que ca se reproduise. Que fais-tu ?',
-       choices:[
-         {label:'Tu expliques calmement les etapes, sans details permettant de la reexploiter ailleurs',correct:true,feedback:'Tres bien. Un bon write-up explique le contexte et la methode de facon utile pour corriger, sans devenir un mode d\u2019emploi pour quelqu\u2019un de malveillant. C\u2019est l\u2019equilibre cle de la communication en securite.'},
-         {label:'Tu refuses de dire quoi que ce soit, "on ne sait jamais"',correct:false,feedback:'Pas ideal : refuser d\u2019expliquer empeche de corriger correctement le probleme et de proteger les autres eleves. La transparence responsable fait partie de l\u2019ethique du hacker.'}
-       ]},
-      {situation:'Pour finir la soiree, ta guilde de potes veut s\u2019entrainer ensemble sur un vrai CTF (Capture The Flag) ce week-end. Comment organisez-vous au mieux votre equipe ?',
-       choices:[
-         {label:'Chacun fait sa mission tout seul dans son coin, sans communiquer',correct:false,feedback:'Moins efficace : sans repartition des roles ni communication, l\u2019equipe perd du temps a refaire les memes choses et rate des indices partages.'},
-         {label:'On repartit les roles (recon, scripts, doc) et on partage les avancees en temps reel',correct:true,feedback:'Exactement la methode des bonnes equipes CTF : repartition des roles, communication continue, documentation partagee. C\u2019est ce qui fait gagner des points et progresser plus vite ensemble.'}
-       ]}
-    ],
-    outro:'Tu as merite le titre de Vaillant pour ce soir : ethique, methode et esprit d\u2019equipe. Pret pour le QCM bonus final ?'
-  }
-];
-
-var curScenario=null,curScenarioStep=0;
-
-function renderScenarios(){
-  var g=el('scenariogrid');if(!g)return;g.innerHTML='';
-  SCENARIOS.forEach(function(s){
-    var done=!!(state.bonusClaimed&&state.bonusClaimed['scn_'+s.id]);
-    var card=document.createElement('div');card.className='zone';
-    var glow=document.createElement('div');
-    glow.style.cssText='position:absolute;inset:0;background:radial-gradient(ellipse at top left,'+s.color+'22,transparent 60%);pointer-events:none';
-    card.appendChild(glow);
-    function addDiv(cls,txt){var d=document.createElement('div');d.className=cls;d.textContent=txt;card.appendChild(d);}
-    addDiv('zone-icon',s.icon);addDiv('zone-name',s.title);addDiv('zone-desc',s.tagline);
-    var meta=document.createElement('div');meta.className='zone-meta';
-    var s1=document.createElement('span');s1.style.color=s.color;s1.textContent=done?'\u2705 termine':'\u25B6 jouer';
-    var s2=document.createElement('span');s2.style.color=s.color;s2.textContent='+'+s.xp+'XP';
-    meta.appendChild(s1);meta.appendChild(s2);card.appendChild(meta);
-    card.addEventListener('click',function(){openScenario(s.id);});
-    g.appendChild(card);
-  });
-}
-
-function openScenario(id){
-  curScenario=SCENARIOS.find(function(s){return s.id===id;});
-  if(!curScenario)return;
-  curScenarioStep=0;
-  el('scenhtitle').textContent=curScenario.icon+' '+curScenario.title;
-  renderScenarioIntro();
-  showScreen('scenario-screen');
-  window.scrollTo(0,0);
-}
-
-function renderScenarioIntro(){
-  var s=curScenario;
-  var c=el('scenariocontent');c.innerHTML='';
-  var block=mkBlock();
-  addEy(block,'\uD83D\uDCD8 // MINI-COURS \u2014 '+s.title.toUpperCase());
-  var body=document.createElement('div');body.className='cbody';
-  (s.intro||'').split('\n').forEach(function(line){
-    line=line.trim();if(!line)return;
-    var d=document.createElement('p');
-    var isHeader=line===line.toUpperCase()&&line.length<60;
-    d.style.cssText=isHeader
-      ?'font-family:var(--pixel);font-size:8px;color:var(--cyan);letter-spacing:.05em;margin:.4rem 0'
-      :'font-size:12px;color:var(--text2);line-height:1.7;margin:.3rem 0';
-    d.textContent=line;body.appendChild(d);
-  });
-  block.appendChild(body);
-  c.appendChild(block);
-  var cta=document.createElement('button');cta.className='cta-go';cta.textContent='\uD83C\uDFAE COURS LU \u2014 COMMENCER L\u2019AVENTURE';
-  cta.addEventListener('click',function(){renderScenarioStep();});
-  c.appendChild(cta);
-}
-
-function renderScenarioStep(){
-  var c=el('scenariocontent');c.innerHTML='';
-  var s=curScenario;
-  if(curScenarioStep>=s.steps.length){renderScenarioOutro();return;}
-  var step=s.steps[curScenarioStep];
-  var block=mkBlock();
-  addEy(block,'\uD83C\uDFAE // '+s.title.toUpperCase()+' \u2014 \u00C9TAPE '+(curScenarioStep+1)+'/'+s.steps.length);
-  var body=document.createElement('div');body.className='cbody';
-  var p=document.createElement('p');p.style.cssText='font-size:13px;color:var(--text);line-height:1.8;margin-bottom:1rem';p.textContent=step.situation;
-  body.appendChild(p);
-  var choicesWrap=document.createElement('div');
-  step.choices.forEach(function(ch,ci){
-    var btn=document.createElement('button');btn.className='cta-go';btn.style.cssText+='text-align:left;margin-top:.5rem';
-    btn.textContent=ch.label;
-    btn.addEventListener('click',(function(ci2){return function(){answerScenarioChoice(ci2);};})(ci));
-    choicesWrap.appendChild(btn);
-  });
-  body.appendChild(choicesWrap);
-  block.appendChild(body);
-  c.appendChild(block);
-}
-
-function answerScenarioChoice(ci){
-  var s=curScenario,step=s.steps[curScenarioStep],ch=step.choices[ci];
-  var c=el('scenariocontent');c.innerHTML='';
-  var block=mkBlock();
-  addEy(block,ch.correct?'\u2705 BONNE D\u00C9CISION':'\u26A0\uFE0F MAUVAISE ID\u00C9E');
-  var body=document.createElement('div');body.className='cbody';
-  var p=document.createElement('p');p.style.cssText='font-size:13px;color:var(--text2);line-height:1.8';p.textContent=ch.feedback;
-  body.appendChild(p);
-  var cta=document.createElement('button');cta.className='cta-go';
-  cta.textContent=(curScenarioStep+1<s.steps.length)?'CONTINUER L\u2019HISTOIRE \u2192':'TERMINER LE SC\u00C9NARIO';
-  cta.addEventListener('click',function(){curScenarioStep++;renderScenarioStep();});
-  block.appendChild(body);block.appendChild(cta);
-  c.appendChild(block);
-}
-
-function renderScenarioOutro(){
-  var s=curScenario;
-  var c=el('scenariocontent');c.innerHTML='';
-  var block=mkBlock();
-  addEy(block,'\uD83C\uDFC1 FIN DU SC\u00C9NARIO');
-  var body=document.createElement('div');body.className='cbody';
-  var p=document.createElement('p');p.style.cssText='font-size:13px;color:var(--text2);line-height:1.8';p.textContent=s.outro;
-  body.appendChild(p);
-  var cta=document.createElement('button');cta.className='cta-go';cta.textContent='\uD83C\uDFAF G\u00C9N\u00C9RER LE QCM BONUS (+'+s.xp+' XP)';
-  cta.addEventListener('click',function(){startScenarioQCM(s);});
-  block.appendChild(body);block.appendChild(cta);
-  c.appendChild(block);
-}
-
-function startScenarioQCM(scenario){
-  if(!state.apiKey||state.apiKey.length<10){showApiModal();toast('Configure ta cl\u00E9 API !');return;}
-  curBonusQuest={id:'scn_'+scenario.id,title:scenario.title,desc:scenario.tagline,xp:scenario.xp,topic:scenario.topic};
-  if(!state.bonusUnlocked)state.bonusUnlocked={};
-  state.bonusUnlocked[curBonusQuest.id]=true;
-  save();
-  el('lhtitle').textContent='\uD83C\uDFAE SC\u00C9NARIO \u2014 '+scenario.title;
-  el('lbackbtn').onclick=function(){goMap();};
-  el('tcours').classList.remove('on');el('tcours').classList.add('locked');
-  el('tqcm').classList.remove('locked');el('tqcm').classList.add('on');
-  el('courscontent').style.display='none';el('qcmcontent').style.display='block';
-  showScreen('lesson-screen');
-  window.scrollTo(0,0);
-  loadBonusQCM();
-}
-// ============ FIN SCENARIOS DU SOIR ============
 
 var curBonusQuest=null;
 
@@ -1055,7 +722,7 @@ async function loadBonusAICours(q,targetEl){
     var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:400,temperature:0.7,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.7,messages:[{role:'user',content:prompt}]})
     });
     if(!resp.ok)throw new Error('Erreur API '+resp.status);
     var data=await resp.json();
@@ -1089,7 +756,7 @@ async function loadBonusQCM(){
     var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:800,temperature:0.7,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:800,temperature:0.7,messages:[{role:'user',content:prompt}]})
     });
     if(!resp.ok){var err=await resp.json();throw new Error(err.error?err.error.message:'Erreur '+resp.status);}
     var data=await resp.json();
@@ -1331,7 +998,6 @@ function renderMap(){
   updateAll();
   renderPlayerSwitch();
   renderLeaderboard();
-  renderScenarios();
   renderBonusQuests();
   checkBonusQuests();
   syncLeaderboardToCloud();
@@ -1468,7 +1134,7 @@ async function loadAICours(w,targetEl){
     var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:600,temperature:0.6,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:600,temperature:0.6,messages:[{role:'user',content:prompt}]})
     });
     if(!resp.ok)throw new Error('Erreur API '+resp.status);
     var data=await resp.json();
@@ -1516,7 +1182,7 @@ async function loadQCM(){
     var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:1200,temperature:0.7,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1200,temperature:0.7,messages:[{role:'user',content:prompt}]})
     });
     if(!resp.ok){var err=await resp.json();throw new Error(err.error?err.error.message:'Erreur '+resp.status);}
     var data=await resp.json();
@@ -1656,6 +1322,235 @@ try{
   document.getElementById('zonesgrid').innerHTML='<div style="color:red;font-family:monospace;padding:1rem;font-size:11px">BOOT ERROR: '+e.message+'<br>'+e.stack+'</div>';
 }
 
+
+// ══════════════════════════════════════════════════════
+// GUEST & ADMIN — Ajout non destructif
+// ══════════════════════════════════════════════════════
+var guestMode = false;
+var guestProfile = {name:'', xp:0, done:{}, bonusClaimed:{}};
+var GUEST_BIN_ID = '6a42d25af5f4af5e2943be8f';
+
+// ─── Helper JSONBin ──────────────────────────────────
+async function readGuestBin(){
+  var headers = {};
+  if(jsonbinKey) headers['X-Master-Key'] = jsonbinKey;
+  var res = await fetch('https://api.jsonbin.io/v3/b/'+GUEST_BIN_ID+'/latest', {headers:headers});
+  if(!res.ok) throw new Error('Bin inaccessible (HTTP '+res.status+')');
+  return (await res.json()).record || {};
+}
+async function writeGuestBin(rec){
+  if(!jsonbinKey) throw new Error('Pas de cle JSONBin configuree');
+  await fetch('https://api.jsonbin.io/v3/b/'+GUEST_BIN_ID, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-Master-Key':jsonbinKey},
+    body:JSON.stringify(rec)
+  });
+}
+
+// ─── GUEST MODAL ────────────────────────────────────
+function showGuestModal(){
+  el('guest-msg').textContent='';
+  el('guest-modal').classList.add('show');
+}
+function closeGuestModal(){el('guest-modal').classList.remove('show');}
+function switchGuestTab(t){
+  el('guest-modal-form').style.display = t==='reg'?'block':'none';
+  el('guest-modal-login').style.display = t==='login'?'block':'none';
+  el('gtab-reg').classList.toggle('sel',t==='reg');
+  el('gtab-login').classList.toggle('sel',t==='login');
+}
+
+async function registerGuest(){
+  var name = el('g-name-input').value.trim();
+  var pwd = el('g-pwd-input').value;
+  var pwd2 = el('g-pwd2-input').value;
+  var msg = el('guest-msg');
+  if(!name){msg.textContent='Entre ton prenom';return;}
+  if(pwd.length<4){msg.textContent='Mot de passe trop court (4 car. min)';return;}
+  if(pwd!==pwd2){msg.textContent='Les mots de passe ne correspondent pas';return;}
+  msg.textContent='Creation...';msg.style.color='var(--cyan)';
+  try{
+    var rec = await readGuestBin();
+    var exists = Object.values(rec).some(function(v){return v&&v.type==='guest'&&v.name&&v.name.toLowerCase()===name.toLowerCase();});
+    if(exists){msg.textContent='Ce prenom est deja pris';msg.style.color='var(--red)';return;}
+    if(!rec._config)rec._config={};
+    // Stocker la cle Groq partagee si disponible
+    var curKey = state.apiKey||'';
+    if(curKey&&!rec._config.sharedGroqKey) rec._config.sharedGroqKey=curKey;
+    rec['g_'+Date.now()]={name:name,type:'guest',password:pwd,xp:0,done:{},streak:0,bonusClaimed:{},suspended:false,createdAt:Date.now(),updatedAt:Date.now()};
+    await writeGuestBin(rec);
+    msg.textContent='Compte cree ! Connexion...';
+    setTimeout(function(){startGuestSession(name,{xp:0,done:{},bonusClaimed:{}});closeGuestModal();},600);
+  }catch(e){msg.textContent='Erreur: '+e.message;msg.style.color='var(--red)';}
+}
+
+async function loginGuest(){
+  var name = el('g-login-name').value.trim();
+  var pwd = el('g-login-pwd').value;
+  var msg = el('guest-msg');
+  if(!name||!pwd){msg.textContent='Prenom et mot de passe requis';return;}
+  msg.textContent='Verification...';msg.style.color='var(--cyan)';
+  try{
+    var rec = await readGuestBin();
+    var entry = Object.values(rec).find(function(v){return v&&v.type==='guest'&&v.name&&v.name.toLowerCase()===name.toLowerCase()&&v.password===pwd;});
+    if(!entry){msg.textContent='Prenom ou mot de passe incorrect';msg.style.color='var(--red)';return;}
+    if(entry.suspended){msg.textContent='Compte suspendu. Contacte Simon.';msg.style.color='var(--red)';return;}
+    if(entry.expiresAt&&Date.now()>entry.expiresAt){msg.textContent='Compte expire. Contacte Simon.';msg.style.color='var(--red)';return;}
+    msg.textContent='Connexion...';
+    // Utiliser la cle Groq partagee si le guest n'en a pas
+    if(rec._config&&rec._config.sharedGroqKey&&!state.apiKey) state.apiKey = rec._config.sharedGroqKey;
+    setTimeout(function(){startGuestSession(name,entry);closeGuestModal();},400);
+  }catch(e){msg.textContent='Erreur: '+e.message;msg.style.color='var(--red)';}
+}
+
+function startGuestSession(name, entry){
+  guestMode = true;
+  guestProfile = {name:name, xp:entry.xp||0, done:entry.done||{}, bonusClaimed:entry.bonusClaimed||{}};
+  el('guest-bar').style.display='block';
+  renderPlayerSwitch();
+  toast('👤 Mode Guest — '+name);
+}
+
+function exitGuestMode(){
+  guestMode=false;
+  guestProfile={name:'',xp:0,done:{},bonusClaimed:{}};
+  el('guest-bar').style.display='none';
+  renderPlayerSwitch();
+  renderMap();
+}
+
+// ─── ADMIN (Simon) ───────────────────────────────────
+function onGererClick(){
+  var curName = players[currentPlayerId]&&players[currentPlayerId].name;
+  if(curName&&curName.toLowerCase()==='simon'){
+    openAdminModal();
+  } else {
+    showPlayerModal();
+  }
+}
+
+async function openAdminModal(){
+  el('admin-modal').classList.add('show');
+  var localC=el('admin-local-list'); localC.innerHTML='';
+  Object.keys(players).forEach(function(pid){
+    var p=players[pid],stats=getPlayerStats(pid);
+    var row=document.createElement('div'); row.className='admin-player-row';
+    row.innerHTML='<span class="pico">'+p.avatar+'</span><span class="apname">'+p.name+'</span><span class="apxp">'+stats.xp+' XP</span>';
+    if(pid!==currentPlayerId){
+      var btn=document.createElement('button'); btn.className='admin-btn red'; btn.textContent='Supprimer';
+      (function(id){btn.addEventListener('click',function(){deletePlayerAdmin(id);});})(pid);
+      row.appendChild(btn);
+    }
+    localC.appendChild(row);
+  });
+  var gC=el('admin-guest-list'); gC.innerHTML='<div style="font-size:11px;color:var(--text2)">Chargement...</div>';
+  try{
+    var rec=await readGuestBin(); gC.innerHTML=''; var has=false;
+    Object.entries(rec).forEach(function(kv){
+      var k=kv[0],v=kv[1];
+      if(!k.startsWith('g_')||!v||!v.name)return; has=true;
+      var row=document.createElement('div'); row.className='admin-player-row'; row.style.cssText='flex-wrap:wrap;gap:6px';
+      var susp=v.suspended?' <span style="color:var(--red)">(SUSPENDU)</span>':'';
+      row.innerHTML='<span class="pico">👤</span><span class="apname">'+v.name+susp+'</span><span class="appwd">pwd:'+v.password+'</span><span class="apxp">'+v.xp+' XP</span>';
+      var btns=document.createElement('div'); btns.style.cssText='display:flex;gap:4px;width:100%;justify-content:flex-end';
+      var bS=document.createElement('button'); bS.className='admin-btn amber'; bS.textContent=v.suspended?'Restaurer':'Suspendre';
+      (function(kk,ss){bS.addEventListener('click',function(){toggleGuestSusp(kk,ss);});})(k,v.suspended);
+      var bD=document.createElement('button'); bD.className='admin-btn red'; bD.textContent='Supprimer';
+      (function(kk){bD.addEventListener('click',function(){deleteGuest(kk);});})(k);
+      btns.appendChild(bS); btns.appendChild(bD); row.appendChild(btns); gC.appendChild(row);
+    });
+    if(!has) gC.innerHTML='<div style="font-size:11px;color:var(--text2)">Aucun compte guest</div>';
+  }catch(e){gC.innerHTML='<div style="font-size:11px;color:var(--red)">'+e.message+'</div>';}
+}
+
+function closeAdminModal(){el('admin-modal').classList.remove('show');}
+
+function deletePlayerAdmin(pid){
+  if(!confirm('Supprimer le joueur local ?'))return;
+  deletePlayer(pid);
+}
+
+async function toggleGuestSusp(k,cur){
+  try{var rec=await readGuestBin();if(rec[k])rec[k].suspended=!cur;await writeGuestBin(rec);openAdminModal();}
+  catch(e){toast('Erreur: '+e.message);}
+}
+async function deleteGuest(k){
+  if(!confirm('Supprimer ce compte guest ?'))return;
+  try{var rec=await readGuestBin();delete rec[k];await writeGuestBin(rec);openAdminModal();}
+  catch(e){toast('Erreur: '+e.message);}
+}
+
+async function makeJsonbinPublic(){
+  var msg=el('admin-public-msg');
+  msg.textContent='Activation...';msg.style.color='var(--cyan)';
+  try{
+    var res=await fetch('https://api.jsonbin.io/v3/b/'+GUEST_BIN_ID+'/meta/privacy',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':jsonbinKey},
+      body:JSON.stringify({private:false})
+    });
+    if(!res.ok){
+      var d=await res.json().catch(function(){return {};});
+      throw new Error(JSON.stringify(d));
+    }
+    msg.textContent='Bin public ! Les guests peuvent s\'inscrire.';
+    msg.style.color='var(--green)';
+  }catch(e){
+    msg.innerHTML='Erreur API. Solution manuelle:<br>jsonbin.io → Bins → Settings → desactiver Private';
+    msg.style.color='var(--amber)';
+  }
+}
+
 </script>
+
+<!-- ══ MODAL GUEST ══════════════════════════════════ -->
+<div class="modal-overlay" id="guest-modal">
+  <div class="modal">
+    <h2>👤 MODE GUEST</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Progression locale uniquement — non visible dans le classement.</p>
+    <div class="guest-tab-bar">
+      <button class="guest-tab sel" id="gtab-reg" onclick="switchGuestTab('reg')">Creer mon compte</button>
+      <button class="guest-tab" id="gtab-login" onclick="switchGuestTab('login')">Deja un compte</button>
+    </div>
+    <!-- INSCRIPTION -->
+    <div id="guest-modal-form">
+      <input type="text" id="g-name-input" placeholder="Ton prenom" maxlength="20"/>
+      <input type="password" id="g-pwd-input" placeholder="Choisir un mot de passe" style="margin-top:8px"/>
+      <input type="password" id="g-pwd2-input" placeholder="Confirmer le mot de passe" style="margin-top:8px"/>
+      <button class="modal-btn" onclick="registerGuest()" style="margin-top:12px">+ CREER MON COMPTE</button>
+    </div>
+    <!-- LOGIN -->
+    <div id="guest-modal-login" style="display:none">
+      <input type="text" id="g-login-name" placeholder="Ton prenom" maxlength="20"/>
+      <input type="password" id="g-login-pwd" placeholder="Ton mot de passe" style="margin-top:8px"/>
+      <button class="modal-btn" onclick="loginGuest()">SE CONNECTER</button>
+    </div>
+    <div id="guest-msg" style="font-size:11px;margin-top:8px;min-height:14px;color:var(--red)"></div>
+    <button class="modal-btn sec" onclick="closeGuestModal()" style="margin-top:8px">ANNULER</button>
+  </div>
+</div>
+
+<!-- ══ MODAL ADMIN (Simon uniquement) ═══════════════ -->
+<div class="modal-overlay" id="admin-modal">
+  <div class="modal" style="max-height:90vh;overflow-y:auto">
+    <h2>⚙️ ADMIN — Simon</h2>
+    <div class="admin-section">
+      <div class="admin-section-title">JOUEURS LOCAUX</div>
+      <div id="admin-local-list"></div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-section-title">COMPTES GUEST (cloud)</div>
+      <div id="admin-guest-list"><div style="font-size:11px;color:var(--text2)">Chargement...</div></div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-section-title">RENDRE JSONBIN PUBLIC</div>
+      <p style="font-size:11px;color:var(--text2);margin-bottom:8px">Necessaire pour que les guests puissent s'inscrire.</p>
+      <button class="modal-btn" onclick="makeJsonbinPublic()">ACTIVER LECTURE PUBLIQUE</button>
+      <div id="admin-public-msg" style="font-size:11px;margin-top:6px;min-height:12px;color:var(--green)"></div>
+    </div>
+    <button class="modal-btn sec" onclick="closeAdminModal()">FERMER</button>
+  </div>
+</div>
+
 </body>
 </html>
