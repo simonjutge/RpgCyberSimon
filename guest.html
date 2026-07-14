@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CyberQuest — Guest Management</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CyberQuest Guest">
+<meta name="theme-color" content="#080810">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080810;color:#c8c8e8;font-family:-apple-system,sans-serif;min-height:100vh;padding:20px;padding-top:max(20px,env(safe-area-inset-top))}
+.container{max-width:500px;margin:0 auto}
+.hdr{text-align:center;margin-bottom:30px}
+.logo{font-family:monospace;font-size:24px;color:#00f5ff;font-weight:700;margin-bottom:4px}
+.logo b{color:#ff2ecb}
+.sub{font-size:12px;color:#7070a0;font-family:monospace}
+.card{background:#0d0d1a;border:1px solid #1e1e3a;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-family:monospace;font-size:11px;color:#00f5ff;letter-spacing:.1em;margin-bottom:14px}
+label{display:block;font-family:monospace;font-size:11px;color:#7070a0;margin-bottom:6px;margin-top:12px}
+input,select{width:100%;padding:11px;background:#12121f;border:1px solid #1e1e3a;border-radius:8px;color:#fff;font-size:13px;font-family:monospace;margin-bottom:4px}
+input:focus,select:focus{border-color:#00f5ff;outline:none}
+.btn{width:100%;padding:13px;border:none;border-radius:8px;font-family:monospace;font-size:12px;font-weight:700;cursor:pointer;margin-top:12px;transition:all .2s}
+.btn-primary{background:#00f5ff;color:#04141a}
+.btn-primary:hover{background:#00d4e0}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:transparent;border:1px solid #1e1e3a;color:#7070a0}
+.btn-secondary:hover{border-color:#00f5ff;color:#00f5ff}
+.err{color:#ff3b5c;font-size:11px;font-family:monospace;margin-top:8px;min-height:14px;display:none}
+.ok{color:#27e0a0;font-size:11px;font-family:monospace;margin-top:8px;min-height:14px;display:none}
+.tabs{display:flex;border:1px solid #1e1e3a;border-radius:8px;overflow:hidden;margin-bottom:16px}
+.tab{flex:1;padding:11px;text-align:center;font-family:monospace;font-size:11px;color:#7070a0;background:transparent;border:none;cursor:pointer}
+.tab.active{background:#1e1e3a;color:#00f5ff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.pwd-display{font-family:monospace;font-size:28px;font-weight:700;letter-spacing:8px;color:#00f5ff;text-align:center;background:#12121f;padding:16px;border-radius:8px;margin:12px 0;user-select:all}
+.info-box{background:rgba(0,245,255,.05);border-left:3px solid #00f5ff;border-radius:6px;padding:12px;margin:12px 0;font-size:11px;color:#c8c8e8;line-height:1.5}
+.warning-box{background:rgba(255,119,0,.08);border-left:3px solid #ff7700;border-radius:6px;padding:12px;margin:12px 0;font-size:11px;color:#ffb020;line-height:1.5}
+.leaderboard{max-width:600px;margin:20px auto}
+.lb-card{background:#0d0d1a;border:1px solid #1e1e3a;border-radius:10px;padding:14px;margin-bottom:10px}
+.lb-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lb-rank{font-family:monospace;font-size:14px;min-width:30px;text-align:center}
+.lb-rank.gold{color:#ffd700}
+.lb-rank.silver{color:#c0c0c0}
+.lb-rank.bronze{color:#cd7f32}
+.lb-info{flex:1}
+.lb-name{font-family:monospace;font-size:13px;font-weight:700;color:#c8c8e8}
+.lb-sub{font-size:10px;color:#7070a0;margin-top:2px}
+.lb-xp{font-family:monospace;font-size:12px;color:#00f5ff;text-align:right}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #1e1e3a;border-top-color:#00f5ff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.code-info{background:#12121f;border:1px solid #1e1e3a;border-radius:8px;padding:12px;margin:12px 0;font-family:monospace;font-size:11px;color:#7070a0;line-height:1.6}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="hdr">
+    <div class="logo">CYBER<b>QUEST</b></div>
+    <div class="sub">Guest Account Manager</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" id="mainTabs">
+    <button class="tab active" data-tab="create">➕ Créer</button>
+    <button class="tab" data-tab="signin">🔑 Connexion</button>
+    <button class="tab" data-tab="leaderboard">🏆 Classement</button>
+  </div>
+
+  <!-- TAB 1: CREATE ACCOUNT -->
+  <div id="create" class="tab-content active">
+    <div class="card">
+      <div class="card-title">ÉTAPE 1 — CONFIGURER LE SERVEUR</div>
+      <div class="info-box">Avant de créer des comptes Guest, configure la clé d'accès au classement JSONBin (une seule fois).</div>
+      <label>X-Master-Key JSONBin</label>
+      <input type="password" id="mkeyInput" placeholder="$2a$10$..." autocomplete="off">
+      <button class="btn btn-secondary" onclick="saveMKey()">Valider la clé</button>
+      <div class="err" id="mkeyErr"></div>
+      <div class="ok" id="mkeyOk"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ÉTAPE 2 — CRÉER UN COMPTE GUEST</div>
+      <label>Nom du compte</label>
+      <input type="text" id="guestNameInput" placeholder="ex: Alice, Guest42" maxlength="30">
+      <label>Mot de passe (6 caractères)</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="guestPwdInput" placeholder="ex: XK7M2P" maxlength="6" style="text-transform:uppercase;letter-spacing:2px;font-size:14px" autocomplete="off">
+        <button class="btn btn-secondary" style="flex:0;padding:11px 16px;margin-top:0" onclick="genPwd()" title="Générer">🎲</button>
+      </div>
+      <label>Durée (heures)</label>
+      <input type="number" id="guestHoursInput" value="48" min="1">
+      <label>Zones autorisées (optionnel, ex: python,reseau)</label>
+      <input type="text" id="guestZonesInput" placeholder="vide = toutes">
+      <label>XP maximum (0 = illimité)</label>
+      <input type="number" id="guestXpCapInput" value="0" min="0">
+      <label>Quêtes bonus</label>
+      <select id="guestBonusInput">
+        <option value="1">Activées</option>
+        <option value="0">Désactivées</option>
+      </select>
+      <button class="btn btn-primary" onclick="createGuest()" id="createBtn">✚ CRÉER LE COMPTE</button>
+      <div class="err" id="createErr"></div>
+      <div class="ok" id="createOk"></div>
+    </div>
+
+    <div id="createResultCard" class="card hidden">
+      <div class="card-title">✅ COMPTE CRÉÉ</div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#7070a0;margin-bottom:4px">Nom du compte</div>
+        <div style="font-family:monospace;font-size:13px;color:#c8c8e8;padding:10px;background:#12121f;border-radius:6px" id="resultName">-</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#7070a0;margin-bottom:4px">Mot de passe</div>
+        <div class="pwd-display" id="resultPwd">------</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#7070a0;margin-bottom:4px">Détails</div>
+        <div style="font-family:monospace;font-size:10px;color:#7070a0;padding:8px;background:#12121f;border-radius:6px;line-height:1.6" id="resultDetails">-</div>
+      </div>
+      <button class="btn btn-secondary" onclick="copyPwd()">📋 Copier mot de passe</button>
+      <button class="btn btn-secondary" onclick="resetCreateForm()">➕ Créer un autre</button>
+    </div>
+  </div>
+
+  <!-- TAB 2: SIGNIN WITH CODE -->
+  <div id="signin" class="tab-content">
+    <div class="card">
+      <div class="card-title">SE CONNECTER AVEC CODE 6-CHAR</div>
+      <div class="info-box">Simon génère un code temporaire (30 min). Tu le saisis ici pour récupérer ton compte et clés automatiquement.</div>
+      <label>Code 6 caractères</label>
+      <input type="text" id="sessionCodeInput" placeholder="ex: AB3X9K" maxlength="6" style="text-transform:uppercase;letter-spacing:6px;font-size:18px;text-align:center" autocomplete="off">
+      <button class="btn btn-primary" onclick="connectWithCode()" id="connectBtn">🔓 SE CONNECTER</button>
+      <div class="err" id="connectErr"></div>
+    </div>
+
+    <div id="connectResultCard" class="card hidden">
+      <div class="card-title">✅ CONNECTÉ</div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#7070a0;margin-bottom:4px">Compte</div>
+        <div style="font-family:monospace;font-size:13px;color:#c8c8e8;padding:10px;background:#12121f;border-radius:6px" id="connectAccountName">-</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#7070a0;margin-bottom:4px">Mot de passe</div>
+        <div class="pwd-display" id="connectAccountPwd">------</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#7070a0;margin-bottom:4px">Clé Groq</div>
+        <div style="font-family:monospace;font-size:10px;color:#c8c8e8;padding:10px;background:#12121f;border-radius:6px;word-break:break-all" id="connectGroqKey">-</div>
+        <button class="btn btn-secondary" style="margin-top:6px" onclick="copyGroqKey()">📋 Copier clé Groq</button>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#7070a0;margin-bottom:4px">Clé JSONBin</div>
+        <div style="font-family:monospace;font-size:10px;color:#c8c8e8;padding:10px;background:#12121f;border-radius:6px;word-break:break-all" id="connectJsonBinKey">-</div>
+        <button class="btn btn-secondary" style="margin-top:6px" onclick="copyJsonBinKey()">📋 Copier clé JSONBin</button>
+      </div>
+      <div class="warning-box">⏱ Ce code expire dans 30 minutes. Mémorise ou sauvegarde ces informations.</div>
+      <button class="btn btn-secondary" onclick="resetSignInForm()">← Nouveau code</button>
+    </div>
+  </div>
+
+  <!-- TAB 3: LEADERBOARD -->
+  <div id="leaderboard" class="tab-content">
+    <div class="card">
+      <div class="card-title">CONFIGURATION</div>
+      <label>X-Master-Key JSONBin</label>
+      <input type="password" id="lbMKeyInput" placeholder="$2a$10$..." autocomplete="off">
+      <label>Bin ID</label>
+      <input type="text" id="lbBinIdInput" placeholder="6a42d25af5f4af5e...">
+      <button class="btn btn-primary" onclick="loadLeaderboard()">🔄 Charger</button>
+      <div class="err" id="lbErr"></div>
+    </div>
+
+    <div id="leaderboardContent" class="hidden">
+      <div class="leaderboard" id="leaderboardList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BIN_KEY_STORE = 'cq_guest_mkey';
+const BIN_ID_STORE = 'cq_guest_binid';
+const CODES_STORE = 'cq_guest_codes';
+let binKey = null, binId = null;
+
+function el(id){return document.getElementById(id);}
+function show(id){el(id).classList.remove('hidden');}
+function hide(id){el(id).classList.add('hidden');}
+function err(id,msg){const e=el(id);e.textContent=msg;e.style.display=msg?'block':'none';}
+function ok(id,msg){const e=el(id);e.textContent=msg;e.style.display=msg?'block':'none';}
+
+// LOAD SAVED MKEY
+window.addEventListener('load',()=>{
+  binKey=localStorage.getItem(BIN_KEY_STORE);
+  binId=localStorage.getItem(BIN_ID_STORE);
+  if(binKey)el('mkeyInput').value=binKey;
+  if(binId){el('lbBinIdInput').value=binId;el('lbMKeyInput').value=binKey||'';}
+  
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      const tabName=t.dataset.tab;
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      el(tabName).classList.add('active');
+    });
+  });
+});
+
+function saveMKey(){
+  const k=el('mkeyInput').value.trim();
+  if(!k.startsWith('$2a$')){err('mkeyErr','Clé invalide (doit commencer par $2a$)');return;}
+  binKey=k;
+  try{localStorage.setItem(BIN_KEY_STORE,k);}catch(e){}
+  err('mkeyErr','');ok('mkeyOk','✓ Clé validée');
+  setTimeout(()=>ok('mkeyOk',''),3000);
+}
+
+function genPwd(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let pwd='';
+  for(let i=0;i<6;i++)pwd+=chars[Math.floor(Math.random()*chars.length)];
+  el('guestPwdInput').value=pwd;
+}
+
+async function createGuest(){
+  const name=el('guestNameInput').value.trim();
+  const pwd=el('guestPwdInput').value.trim().toUpperCase();
+  const hours=parseInt(el('guestHoursInput').value)||48;
+  const zones=el('guestZonesInput').value.trim()?el('guestZonesInput').value.split(',').map(s=>s.trim()):null;
+  const xcap=parseInt(el('guestXpCapInput').value)||null;
+  const bonus=el('guestBonusInput').value==='1';
+
+  if(!binKey){err('createErr','Configure d\'abord la clé JSONBin');return;}
+  if(!name){err('createErr','Entre un nom');return;}
+  if(!pwd||pwd.length!==6){err('createErr','Le mot de passe doit faire 6 caractères');return;}
+
+  err('createErr','');
+  const btn=el('createBtn');btn.disabled=true;btn.textContent='Création...';
+
+  try{
+    const rec=await readBin();
+    if(Object.values(rec).some(v=>v&&v.type==='guest'&&(v.name||'').toLowerCase()===name.toLowerCase())){
+      throw new Error('Ce nom existe déjà');
+    }
+    rec['g_'+Date.now()]={
+      name,type:'guest',password:pwd,xp:0,done:{},streak:0,bonusClaimed:{},
+      allowedZones:zones,xpCap:xcap&&xcap>0?xcap:null,allowBonus:bonus,
+      suspended:false,expiresAt:Date.now()+hours*3600000,updatedAt:Date.now()
+    };
+    await writeBin(rec);
+    
+    el('resultName').textContent=name;
+    el('resultPwd').textContent=pwd;
+    el('resultDetails').textContent=`Durée: ${hours}h\nZones: ${zones?zones.join(', '):'Toutes'}\nXP cap: ${xcap?xcap:'Illimité'}\nBonus: ${bonus?'Oui':'Non'}`;
+    hide('createResultCard');show('createResultCard');
+    err('createErr','');
+  }catch(e){
+    err('createErr','Erreur: '+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='✚ CRÉER LE COMPTE';
+  }
+}
+
+function copyPwd(){
+  navigator.clipboard.writeText(el('resultPwd').textContent).then(()=>{
+    ok('createOk','📋 Copié');setTimeout(()=>ok('createOk',''),2000);
+  });
+}
+
+function resetCreateForm(){
+  el('guestNameInput').value='';
+  el('guestPwdInput').value='';
+  el('guestHoursInput').value='48';
+  el('guestZonesInput').value='';
+  el('guestXpCapInput').value='0';
+  hide('createResultCard');
+}
+
+async function readBin(){
+  if(!binKey)throw new Error('Pas de clé configurée');
+  // Pour le test local, on utilise l'ID du bin de démo depuis admin.html
+  const bid='6a42d25af5f4af5e2943be8f';
+  const r=await fetch(`https://api.jsonbin.io/v3/b/${bid}/latest`,{headers:{'X-Master-Key':binKey}});
+  if(!r.ok)throw new Error('HTTP '+r.status+' — clé incorrecte?');
+  return (await r.json()).record||{};
+}
+
+async function writeBin(rec){
+  if(!binKey)throw new Error('Pas de clé configurée');
+  const bid='6a42d25af5f4af5e2943be8f';
+  const r=await fetch(`https://api.jsonbin.io/v3/b/${bid}`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-Master-Key':binKey},
+    body:JSON.stringify(rec)
+  });
+  if(!r.ok)throw new Error('HTTP '+r.status);
+}
+
+async function connectWithCode(){
+  const code=el('sessionCodeInput').value.trim().toUpperCase();
+  if(!code||code.length!==6){err('connectErr','Code invalide (6 caractères)');return;}
+  
+  err('connectErr','');
+  const btn=el('connectBtn');btn.disabled=true;btn.textContent='Connexion...';
+
+  try{
+    const codes=JSON.parse(localStorage.getItem(CODES_STORE)||'{}');
+    const codeData=codes[code];
+    if(!codeData||Date.now()>codeData.expiresAt){
+      throw new Error('Code expiré ou invalide');
+    }
+    
+    el('connectAccountName').textContent=codeData.name;
+    el('connectAccountPwd').textContent=codeData.password;
+    el('connectGroqKey').textContent=codeData.groqKey;
+    el('connectJsonBinKey').textContent=codeData.jsonbinKey;
+    hide('connectResultCard');show('connectResultCard');
+  }catch(e){
+    err('connectErr','Erreur: '+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='🔓 SE CONNECTER';
+  }
+}
+
+function copyGroqKey(){
+  navigator.clipboard.writeText(el('connectGroqKey').textContent).then(()=>{
+    ok('createOk','📋 Clé Groq copiée');setTimeout(()=>ok('createOk',''),2000);
+  });
+}
+
+function copyJsonBinKey(){
+  navigator.clipboard.writeText(el('connectJsonBinKey').textContent).then(()=>{
+    ok('createOk','📋 Clé JSONBin copiée');setTimeout(()=>ok('createOk',''),2000);
+  });
+}
+
+function resetSignInForm(){
+  el('sessionCodeInput').value='';
+  hide('connectResultCard');
+}
+
+async function loadLeaderboard(){
+  const mk=el('lbMKeyInput').value.trim();
+  const bid=el('lbBinIdInput').value.trim();
+  if(!mk||!bid){err('lbErr','Remplis les deux champs');return;}
+  
+  err('lbErr','');
+  const list=el('leaderboardList');list.innerHTML='<div style="text-align:center"><div class="spinner"></div></div>';
+
+  try{
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${bid}/latest`,{headers:{'X-Master-Key':mk}});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const rec=(await r.json()).record||{};
+    
+    const ranked=Object.entries(rec)
+      .map(([k,v])=>v&&v.xp?{...v,id:k}:null)
+      .filter(Boolean)
+      .sort((a,b)=>b.xp-a.xp);
+    
+    list.innerHTML='';
+    ranked.forEach((p,i)=>{
+      const medals=['🥇','🥈','🥉'];
+      const card=document.createElement('div');card.className='lb-card';
+      const rank=i<3?medals[i]:'#'+(i+1);
+      card.innerHTML=`
+        <div class="lb-header">
+          <div class="lb-rank">${rank}</div>
+          <div class="lb-info">
+            <div class="lb-name">${p.name}${p.type==='guest'?' 👤':''}</div>
+            <div class="lb-sub">${p.done?Object.keys(p.done).length:0} missions · ${p.streak||0}🔥</div>
+          </div>
+          <div class="lb-xp">${p.xp} XP</div>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+    show('leaderboardContent');
+  }catch(e){
+    err('lbErr','Erreur: '+e.message);
+    list.innerHTML='';
+  }
+}
+</script>
+
+</body>
+</html>
