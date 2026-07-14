@@ -1,0 +1,95 @@
+<div class="modal-overlay" id="guestmodal">
+  <div class="modal">
+    <h2>👤 MODE GUEST</h2>
+    <p>Tu n'as pas encore de compte ? Crée-toi un ici, ou utilise un code temporaire.</p>
+    
+    <div style="display:flex;gap:8px;margin-bottom:1rem">
+      <button class="modal-btn" style="flex:1" onclick="switchGuestTab('create')">➕ Créer</button>
+      <button class="modal-btn" style="flex:1" onclick="switchGuestTab('code')">🔑 Code</button>
+    </div>
+
+    <!-- TAB: CREATE GUEST ACCOUNT -->
+    <div id="guest-tab-create" style="display:block">
+      <p style="font-size:11px;color:var(--text3);margin-bottom:1rem">👉 Pour plus de contrôle, utilise l'app Guest Manager :</p>
+      <a href="guest.html" target="_blank" class="modal-btn" style="text-decoration:none;display:block;text-align:center">🚀 Ouvrir Guest Manager</a>
+      <p style="font-size:10px;color:var(--text3);margin-top:.75rem;text-align:center">Ou continue ci-dessous pour une création rapide</p>
+      <label style="margin-top:1rem">Nom de compte</label>
+      <input class="modal-btn" type="text" id="guestquickname" placeholder="Prénom" />
+      <label>Mot de passe (6 caractères)</label>
+      <div style="display:flex;gap:6px">
+        <input class="modal-btn" type="text" id="guestquickpwd" placeholder="ex: XK7M2P" maxlength="6" style="text-transform:uppercase;letter-spacing:1px" />
+        <button class="modal-btn sec" style="flex:0;padding:.7rem 1rem" onclick="genQuickPwd()">🎲</button>
+      </div>
+      <button class="modal-btn" onclick="createQuickGuest()">✅ CRÉER ET ENTRER</button>
+      <div class="modal-link" id="guestCreateMsg"></div>
+    </div>
+
+    <!-- TAB: SIGNIN WITH CODE -->
+    <div id="guest-tab-code" style="display:none">
+      <label>Code 6 caractères (valable 30 min)</label>
+      <input type="text" id="guestquickcode" placeholder="ex: AB3X9K" maxlength="6" style="text-transform:uppercase;letter-spacing:3px;font-size:14px;text-align:center" />
+      <button class="modal-btn" onclick="signinQuickGuest()">🔓 SE CONNECTER</button>
+      <div class="modal-link" id="guestSigninMsg"></div>
+    </div>
+
+    <button class="modal-btn sec" onclick="closeGuestModal()">← RETOUR</button>
+  </div>
+</div>
+
+<script>
+function switchGuestTab(tab){
+  document.getElementById('guest-tab-create').style.display = tab==='create' ? 'block' : 'none';
+  document.getElementById('guest-tab-code').style.display = tab==='code' ? 'block' : 'none';
+}
+
+function genQuickPwd(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let pwd='';
+  for(let i=0;i<6;i++)pwd+=chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('guestquickpwd').value=pwd;
+}
+
+function createQuickGuest(){
+  const name=document.getElementById('guestquickname').value.trim();
+  const pwd=document.getElementById('guestquickpwd').value.trim().toUpperCase();
+  const msg=document.getElementById('guestCreateMsg');
+  msg.textContent='';
+  
+  if(!name){msg.textContent='❌ Entre un nom';msg.style.color='#ff3b5c';return;}
+  if(!pwd||pwd.length!==6){msg.textContent='❌ Le mot de passe doit faire 6 caractères';msg.style.color='#ff3b5c';return;}
+  
+  // Créer le profil guest localement
+  const gid='g_'+Date.now();
+  guestProfile={id:gid,name:name,type:'guest',password:pwd,xp:0,done:{},streak:0,avatar:'👤'};
+  guestMode=true;
+  currentPlayerId=gid;
+  try{localStorage.setItem('cq6_guests',JSON.stringify({[gid]:guestProfile}));}catch(e){}
+  
+  msg.textContent='✅ Connecté comme '+name;msg.style.color='#27e0a0';
+  closeGuestModal();
+  updateAll();renderMap();
+  setTimeout(()=>{
+    document.getElementById('guestquickname').value='';
+    document.getElementById('guestquickpwd').value='';
+  },500);
+}
+
+function signinQuickGuest(){
+  const code=document.getElementById('guestquickcode').value.trim().toUpperCase();
+  const msg=document.getElementById('guestSigninMsg');
+  msg.textContent='';
+  
+  if(!code||code.length!==6){msg.textContent='❌ Code invalide (6 caractères)';msg.style.color='#ff3b5c';return;}
+  
+  // Simpler pour l'instant - dans une version complète, on vérifierait le code sur le serveur
+  msg.textContent='⏳ Vérification...';msg.style.color='#ffb020';
+  
+  // Placeholder - à compléter avec la logique de codes temporaires
+  setTimeout(()=>{
+    msg.textContent='ℹ️ Utilise guest.html pour se connecter par code';
+    msg.style.color='#00f5ff';
+  },1000);
+}
+
+function closeGuestModal(){el('guestmodal').classList.remove('show');}
+</script>
