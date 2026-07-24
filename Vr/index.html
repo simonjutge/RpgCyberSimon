@@ -91,9 +91,67 @@
 #vrToggleBar .vt-btn.vr-active{background:#00f0ff;color:#04141a;}
 #vrToggleBar .vt-btn:hover{opacity:.85;}
 
+
+#homeBtn{
+  position:absolute;top:0;left:0;z-index:15;
+  font-family:monospace;font-size:10px;
+  background:rgba(6,10,16,.85);border:1px solid #1c2c3d;
+  color:#6f8a99;padding:8px 14px;cursor:pointer;
+  border-radius:0 0 8px 0;display:none;
+}
+#homeBtn:hover{color:#00f0ff;border-color:#00f0ff;}
+
 </style>
 </head>
 <body>
+<script>
+// Attrape-erreurs global — affiche un message visible au lieu d'un crash silencieux
+// Place en tout premier pour capturer les erreurs de TOUS les blocs suivants
+(function(){
+  var shown=false;
+  function showErr(msg){
+    if(shown)return; shown=true;
+    var b=document.createElement('div');
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999999;background:#ff3b3b;color:#fff;font-family:monospace;font-size:11px;padding:10px 14px;line-height:1.5;';
+    b.innerHTML='<b>Erreur detectee :</b> '+String(msg).slice(0,200)
+      +'<div style="font-size:10px;margin-top:4px;opacity:.85">Note ce message exact et transmets-le pour diagnostic.</div>'
+      +'<button style="margin-top:6px;padding:5px 10px;background:rgba(255,255,255,.2);border:none;border-radius:5px;color:#fff;font-family:inherit;cursor:pointer" onclick="this.parentNode.remove()">Fermer</button>';
+    document.body.appendChild(b);
+  }
+  window.addEventListener('error',function(e){ showErr((e.error&&e.error.message)||e.message||'Erreur inconnue'); });
+  window.addEventListener('unhandledrejection',function(e){ showErr((e.reason&&e.reason.message)||e.reason||'Promesse rejetee'); });
+})();
+</script>
+<div id="bootOverlay" style="position:fixed;inset:0;z-index:99999;background:#04040a;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;">
+<div style="font-size:52px;line-height:1;margin-bottom:10px;filter:drop-shadow(0 0 14px #00f5ff);">🥽</div>
+<div style="font-family:'Press Start 2P',monospace;font-size:18px;letter-spacing:3px;text-shadow:0 0 14px #00f5ff;margin-bottom:6px;color:#00f5ff;">CYBER<span style="color:#a855f7">QUEST</span></div>
+<div style="font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:3px;color:#a855f7;margin-bottom:20px;">VR MODE // QUEST 2</div>
+<div id="bootLines" style="font-size:11px;line-height:1.9;color:#39ff14;width:270px;min-height:130px;"></div>
+<div style="width:270px;height:6px;background:#12121f;border:1px solid #1e1e3a;margin-top:18px;overflow:hidden;">
+<div id="bootBar" style="height:100%;width:0%;background:linear-gradient(90deg,#00f5ff,#a855f7);box-shadow:0 0 10px #00f5ff;"></div>
+</div>
+<div style="font-size:9px;color:#3a3a60;margin-top:12px;letter-spacing:2px;">TAP POUR PASSER</div>
+</div>
+<script>
+(function(){
+  var lines=["> INIT KERNEL................OK","> LOAD SECURITY MODULES......OK","> MOUNT /dev/cyberquest......OK","> DECRYPT PLAYER DATA........OK","> ESTABLISH UPLINK...........OK","> WELCOME, OPERATOR."];
+  var ov=document.getElementById("bootOverlay"),ln=document.getElementById("bootLines"),bar=document.getElementById("bootBar");
+  if(!ov||!ln||!bar)return;
+  var i=0,html="";
+  var iv=setInterval(function(){
+    if(i<lines.length){html+="<div>"+lines[i]+"</div>";ln.innerHTML=html;i++;bar.style.width=Math.round(i/lines.length*100)+"%";}
+    else{clearInterval(iv);setTimeout(close,350);}
+  },200);
+  function close(){
+    if(!ov)return;
+    ov.style.transition="opacity .4s ease";ov.style.opacity="0";
+    setTimeout(function(){if(ov&&ov.parentNode)ov.parentNode.removeChild(ov);},420);
+  }
+  ov.addEventListener("click",close);
+  ov.addEventListener("touchstart",close);
+})();
+</script>
+
 
 <!-- LOADING SCREEN -->
 <div id="loading">
@@ -142,12 +200,14 @@
 </div>
 
 <!-- APP -->
+<button id="homeBtn">🏠 Carte</button>
 <div id="tb">
   <div class="brand">CYBER<b>QUEST</b> <span style="color:#3a5060;font-size:9px">// VR</span></div>
   <div class="tbr">
     <button class="tb" id="adminBtn" style="display:none">Admin</button>
     <button class="tb" id="profileBtn">Profil</button>
     <button class="tb" id="vrBtn">VR</button>
+    <button class="tb" id="quitBtn" style="border-color:#ff3b3b;color:#ff3b3b">Quitter</button>
   </div>
 </div>
 <div id="st"></div>
@@ -497,22 +557,26 @@ function initApp() {
     function showXP(txt){var x=xpFP.ctx;x.clearRect(0,0,280,80);x.fillStyle='#27e0a0';x.font='700 30px monospace';x.textAlign='center';x.fillText(txt,140,45);xpFP.tex.needsUpdate=true;xpFM.material.opacity=1;xpA={t:0};}
     function allowedZ(){if(!guestAllowedZones)return ZONES;return ZONES.filter(function(z){return guestAllowedZones.indexOf(z.id)!==-1;});}
 
-    function renderZones(){qLocked=false;cBg(cP.ctx,700,480,'CHOISIR UNE ZONE',null,'Selectionne ta zone :','#00f0ff');cP.tex.needsUpdate=true;var zones=allowedZ();var items=zones.map(function(z){var nd=z.weeks.filter(function(w){return myDone[z.id+'_'+w.n];}).length;return{label:z.icon+' '+z.name+' ('+nd+'/'+z.weeks.length+')',col:z.color,bg:nd===z.weeks.length?'rgba(39,224,160,.06)':null,cb:function(){renderWeeks(z);}};});items.push({label:'QUETES BONUS ('+BQ.filter(function(q){return myBQ[q.id];}).length+'/7)',col:'#ffb020',cb:renderBQ});items.push({label:'SCENARIOS DU SOIR ('+SC.filter(function(s){return myBQ[s.id];}).length+'/5)',col:'#ff2ecb',cb:renderSC});showB(items);}
+    function showHomeBtn(show){
+  var b=document.getElementById('homeBtn');
+  if(b)b.style.display=show?'block':'none';
+}
+function renderZones(){showHomeBtn(false);qLocked=false;cBg(cP.ctx,700,480,'CHOISIR UNE ZONE',null,'Selectionne ta zone :','#00f0ff');cP.tex.needsUpdate=true;var zones=allowedZ();var items=zones.map(function(z){var nd=z.weeks.filter(function(w){return myDone[z.id+'_'+w.n];}).length;return{label:z.icon+' '+z.name+' ('+nd+'/'+z.weeks.length+')',col:z.color,bg:nd===z.weeks.length?'rgba(39,224,160,.06)':null,cb:function(){renderWeeks(z);}};});items.push({label:'QUETES BONUS ('+BQ.filter(function(q){return myBQ[q.id];}).length+'/7)',col:'#ffb020',cb:renderBQ});items.push({label:'SCENARIOS DU SOIR ('+SC.filter(function(s){return myBQ[s.id];}).length+'/5)',col:'#ff2ecb',cb:renderSC});showB(items);}
 
-    function renderWeeks(z,pg){var p=pg||0,sl=z.weeks.slice(p*5,p*5+5);cBg(cP.ctx,700,480,z.icon+' '+z.name,z.desc,null,z.color);cP.tex.needsUpdate=true;var items=[{label:'← Zones',col:'#6f8a99',cb:renderZones}];sl.forEach(function(w){var d=!!myDone[z.id+'_'+w.n];items.push({label:(d?'OK ':'> ')+'S'+w.n+' '+w.title,col:d?'#27e0a0':z.color,bg:d?'rgba(39,224,160,.05)':null,cb:function(){renderCours(z,w);}});});if(z.weeks.length>5&&p===0)items.push({label:'→ S6-S'+z.weeks.length,col:'#ffb020',cb:function(){renderWeeks(z,1);}});if(p>0)items.push({label:'← S1-S5',col:'#6f8a99',cb:function(){renderWeeks(z,0);}});showB(items);}
+    function renderWeeks(z,pg){showHomeBtn(true);var p=pg||0,sl=z.weeks.slice(p*5,p*5+5);cBg(cP.ctx,700,480,z.icon+' '+z.name,z.desc,null,z.color);cP.tex.needsUpdate=true;var items=[{label:'← Zones',col:'#6f8a99',cb:renderZones}];sl.forEach(function(w){var d=!!myDone[z.id+'_'+w.n];items.push({label:(d?'OK ':'> ')+'S'+w.n+' '+w.title,col:d?'#27e0a0':z.color,bg:d?'rgba(39,224,160,.05)':null,cb:function(){renderCours(z,w);}});});if(z.weeks.length>5&&p===0)items.push({label:'→ S6-S'+z.weeks.length,col:'#ffb020',cb:function(){renderWeeks(z,1);}});if(p>0)items.push({label:'← S1-S5',col:'#6f8a99',cb:function(){renderWeeks(z,0);}});showB(items);}
 
-    async function renderCours(z,w){qLocked=true;hideB();coursPage=0;cBg(cP.ctx,700,480,'COURS '+w.title.toUpperCase(),z.name+' S'+w.n,'Generation du cours...',z.color);cP.tex.needsUpdate=true;try{var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},body:JSON.stringify({model:MODEL,max_tokens:400,temperature:0.7,messages:[{role:'system',content:'Prof cyber. Cours 180 mots lyceen STI2D. TEXTE UNIQUEMENT.'},{role:'user',content:'Zone:'+z.name+' S'+w.n+':'+w.title+' '+w.sub+' Sujets:'+w.topics.join(',')}]})});if(!res.ok)throw new Error('HTTP '+res.status);coursText=(await res.json()).choices[0].message.content||'Indisponible.';}catch(e){coursText='Objectifs: '+w.topics.join(' · ')+' ('+e.message+')';}showCoursPage(z,w);}
+    async function renderCours(z,w){showHomeBtn(true);qLocked=true;hideB();coursPage=0;cBg(cP.ctx,700,480,'COURS '+w.title.toUpperCase(),z.name+' S'+w.n,'Generation du cours...',z.color);cP.tex.needsUpdate=true;try{var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},body:JSON.stringify({model:MODEL,max_tokens:400,temperature:0.7,messages:[{role:'system',content:'Prof cyber. Cours 180 mots lyceen STI2D. TEXTE UNIQUEMENT.'},{role:'user',content:'Zone:'+z.name+' S'+w.n+':'+w.title+' '+w.sub+' Sujets:'+w.topics.join(',')}]})});if(!res.ok)throw new Error('HTTP '+res.status);coursText=(await res.json()).choices[0].message.content||'Indisponible.';}catch(e){coursText='Objectifs: '+w.topics.join(' · ')+' ('+e.message+')';}showCoursPage(z,w);}
     function showCoursPage(z,w){var words=coursText.split(' '),pp=55,pages=Math.ceil(words.length/pp),body=words.slice(coursPage*pp,(coursPage+1)*pp).join(' '),done=!!myDone[z.id+'_'+w.n];cBg(cP.ctx,700,480,'COURS '+w.title.toUpperCase(),z.name+' S'+w.n+(done?' OK':''),body,z.color,coursPage,pages);cP.tex.needsUpdate=true;var items=[];if(coursPage>0)items.push({label:'← Page prec.',col:'#6f8a99',cb:function(){coursPage--;showCoursPage(z,w);}});if(coursPage<pages-1)items.push({label:'→ Page suiv.',col:z.color,cb:function(){coursPage++;showCoursPage(z,w);}});items.push({label:'COURS LU → GENERER QCM IA',col:'#00f0ff',bg:'rgba(0,240,255,.08)',cb:function(){loadQ(z,w);}});items.push({label:'← Semaines',col:'#6f8a99',cb:function(){renderWeeks(z);}});showB(items);qLocked=false;}
 
-    async function loadQ(z,w){if(guestXpCap&&myXp>=guestXpCap){cBg(cP.ctx,700,480,'XP LIMITE','','XP max atteint ('+guestXpCap+'). Contacte Simon.','#ffb020');cP.tex.needsUpdate=true;showB([{label:'← Zones',col:'#6f8a99',cb:renderZones}]);return;}qLocked=true;hideB();cBg(cP.ctx,700,480,'QCM',z.name+' S'+w.n,'Generation...',z.color);cP.tex.needsUpdate=true;try{var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},body:JSON.stringify({model:MODEL,max_tokens:400,temperature:0.8,messages:[{role:'system',content:'QCM cyber francais lyceen. JSON: {"q":"...","opts":["...","...","...","..."],"ok":0,"exp":"..."}'},{role:'user',content:'Zone:'+z.name+' S'+w.n+':'+w.title+' Sujets:'+w.topics.join(',')}]})});if(!res.ok){var er=await res.json().catch(function(){return {};});throw new Error('HTTP '+res.status+': '+(er.error&&er.error.message||'Verifiez la cle Groq'));}var raw=(await res.json()).choices[0].message.content||'';var d=JSON.parse(raw.replace(/```json|```/g,'').trim());var done=!!myDone[z.id+'_'+w.n];cBg(cP.ctx,700,480,'QCM '+w.title.toUpperCase(),z.name+' S'+w.n+(done?' OK':''),d.q,z.color);cP.tex.needsUpdate=true;var L=['A','B','C','D'];var opts=[{label:'← Cours',col:'#6f8a99',cb:function(){renderCours(z,w);}}];d.opts.slice(0,4).forEach(function(o,i){opts.push({label:L[i]+' '+o,col:z.color,cb:(function(ii){return function(){onAns(ii,d.ok,d.exp,z,w);};})(i)});});showB(opts);qLocked=false;}catch(e){cBg(cP.ctx,700,480,'ERREUR','',e.message,'#ff3b5c');cP.tex.needsUpdate=true;showB([{label:'← Semaines',col:'#6f8a99',cb:function(){renderWeeks(z);}}]);qLocked=false;}}
+    async function loadQ(z,w){showHomeBtn(true);if(guestXpCap&&myXp>=guestXpCap){cBg(cP.ctx,700,480,'XP LIMITE','','XP max atteint ('+guestXpCap+'). Contacte Simon.','#ffb020');cP.tex.needsUpdate=true;showB([{label:'← Zones',col:'#6f8a99',cb:renderZones}]);return;}qLocked=true;hideB();cBg(cP.ctx,700,480,'QCM',z.name+' S'+w.n,'Generation...',z.color);cP.tex.needsUpdate=true;try{var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},body:JSON.stringify({model:MODEL,max_tokens:400,temperature:0.8,messages:[{role:'system',content:'QCM cyber francais lyceen. JSON: {"q":"...","opts":["...","...","...","..."],"ok":0,"exp":"..."}'},{role:'user',content:'Zone:'+z.name+' S'+w.n+':'+w.title+' Sujets:'+w.topics.join(',')}]})});if(!res.ok){var er=await res.json().catch(function(){return {};});throw new Error('HTTP '+res.status+': '+(er.error&&er.error.message||'Verifiez la cle Groq'));}var raw=(await res.json()).choices[0].message.content||'';var d=JSON.parse(raw.replace(/```json|```/g,'').trim());var done=!!myDone[z.id+'_'+w.n];cBg(cP.ctx,700,480,'QCM '+w.title.toUpperCase(),z.name+' S'+w.n+(done?' OK':''),d.q,z.color);cP.tex.needsUpdate=true;var L=['A','B','C','D'];var opts=[{label:'← Cours',col:'#6f8a99',cb:function(){renderCours(z,w);}}];d.opts.slice(0,4).forEach(function(o,i){opts.push({label:L[i]+' '+o,col:z.color,cb:(function(ii){return function(){onAns(ii,d.ok,d.exp,z,w);};})(i)});});showB(opts);qLocked=false;}catch(e){cBg(cP.ctx,700,480,'ERREUR','',e.message,'#ff3b5c');cP.tex.needsUpdate=true;showB([{label:'← Semaines',col:'#6f8a99',cb:function(){renderWeeks(z);}}]);qLocked=false;}}
 
     async function onAns(idx,ok,exp,z,w){if(qLocked)return;qLocked=true;var correct=idx===ok,already=!!myDone[z.id+'_'+w.n];cBg(cP.ctx,700,480,correct?'CORRECT !':'RATE',z.name+' S'+w.n,exp+(correct&&!already?'\n\n+100 XP !':''),correct?'#27e0a0':'#ff3b5c');cP.tex.needsUpdate=true;if(correct&&!already){showXP('+100 XP');updateStreak();if(!isGuest){await syncProg(z.id+'_'+w.n,{});var nb=checkBQ();if(nb.length){setTimeout(function(){showBQU(nb[0]);},2600);return;}}else{myDone[z.id+'_'+w.n]=true;myXp=calcXP(myDone,myBQ);var nb2=checkBQ();if(nb2.length){setTimeout(function(){showBQU(nb2[0]);},2600);return;}}}setTimeout(function(){if(correct)renderWeeks(z);else loadQ(z,w);},2500);}
 
     function checkBQ(){var n=[];BQ.forEach(function(q){if(!myBQ[q.id]&&q.check()){myBQ[q.id]=true;n.push(q);}});return n;}
     function showBQU(q){showXP('+'+q.xp+' XP');cBg(cP.ctx,700,480,'QUETE DEBLOQUEE',q.icon+' '+q.title,'+'+q.xp+' XP bonus !','#ffb020');cP.tex.needsUpdate=true;if(!isGuest)syncProg(null,{[q.id]:true});setTimeout(renderZones,3000);}
-    function renderBQ(){cBg(cP.ctx,700,480,'QUETES BONUS',isGuest?'XP local session':'',null,'#ffb020');cP.tex.needsUpdate=true;var items=[{label:'← Zones',col:'#6f8a99',cb:renderZones}];BQ.forEach(function(q){var d=!!myBQ[q.id];items.push({label:(d?'OK ':'_ ')+q.icon+' '+q.title+' +'+q.xp+' XP',col:d?'#27e0a0':'#ffb020',bg:d?'rgba(39,224,160,.05)':null,cb:function(){cBg(cP.ctx,700,480,q.icon+' '+q.title,'Quete +'+q.xp+' XP',(d?'Debloquee !':'En cours...'),('#ffb020'));cP.tex.needsUpdate=true;showB([{label:'← Quetes',col:'#6f8a99',cb:renderBQ}].concat(d?[]:[{label:'Verifier',col:'#ffb020',cb:function(){var r=checkBQ();r.length?showBQU(r[0]):renderBQ();}}]));return;}});});showB(items);}
+    function renderBQ(){showHomeBtn(true);cBg(cP.ctx,700,480,'QUETES BONUS',isGuest?'XP local session':'',null,'#ffb020');cP.tex.needsUpdate=true;var items=[{label:'← Zones',col:'#6f8a99',cb:renderZones}];BQ.forEach(function(q){var d=!!myBQ[q.id];items.push({label:(d?'OK ':'_ ')+q.icon+' '+q.title+' +'+q.xp+' XP',col:d?'#27e0a0':'#ffb020',bg:d?'rgba(39,224,160,.05)':null,cb:function(){cBg(cP.ctx,700,480,q.icon+' '+q.title,'Quete +'+q.xp+' XP',(d?'Debloquee !':'En cours...'),('#ffb020'));cP.tex.needsUpdate=true;showB([{label:'← Quetes',col:'#6f8a99',cb:renderBQ}].concat(d?[]:[{label:'Verifier',col:'#ffb020',cb:function(){var r=checkBQ();r.length?showBQU(r[0]):renderBQ();}}]));return;}});});showB(items);}
 
-    function renderSC(){cBg(cP.ctx,700,480,'SCENARIOS DU SOIR',isGuest?'XP local session':'',null,'#ff2ecb');cP.tex.needsUpdate=true;var items=[{label:'← Zones',col:'#6f8a99',cb:renderZones}];SC.forEach(function(s){var d=!!myBQ[s.id];items.push({label:(d?'OK ':'> ')+s.icon+' '+s.title+' +'+s.xp+' XP',col:d?'#27e0a0':'#ff2ecb',bg:d?'rgba(39,224,160,.05)':null,cb:function(){loadSC(s);}});});showB(items);}
+    function renderSC(){showHomeBtn(true);cBg(cP.ctx,700,480,'SCENARIOS DU SOIR',isGuest?'XP local session':'',null,'#ff2ecb');cP.tex.needsUpdate=true;var items=[{label:'← Zones',col:'#6f8a99',cb:renderZones}];SC.forEach(function(s){var d=!!myBQ[s.id];items.push({label:(d?'OK ':'> ')+s.icon+' '+s.title+' +'+s.xp+' XP',col:d?'#27e0a0':'#ff2ecb',bg:d?'rgba(39,224,160,.05)':null,cb:function(){loadSC(s);}});});showB(items);}
     async function loadSC(s){qLocked=true;hideB();cBg(cP.ctx,700,480,s.icon+' '+s.title,'Scenario','Generation...','#ff2ecb');cP.tex.needsUpdate=true;try{var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},body:JSON.stringify({model:MODEL,max_tokens:400,temperature:0.85,messages:[{role:'system',content:'QCM cyber gaming. JSON: {"intro":"1 phrase","q":"...","opts":["...","...","...","..."],"ok":0,"exp":"..."}'},{role:'user',content:'Scenario:'+s.title+' Contexte:'+s.desc+' Theme:'+s.topic}]})});if(!res.ok)throw new Error('HTTP '+res.status);var raw=(await res.json()).choices[0].message.content||'';var d=JSON.parse(raw.replace(/```json|```/g,'').trim());cBg(cP.ctx,700,480,s.icon+' '+s.title,d.intro,d.q,'#ff2ecb');cP.tex.needsUpdate=true;var L=['A','B','C','D'];var opts=[{label:'← Scenarios',col:'#6f8a99',cb:renderSC}];d.opts.slice(0,4).forEach(function(o,i){opts.push({label:L[i]+' '+o,col:'#ff2ecb',cb:(function(ii){return function(){onSC(ii,d.ok,d.exp,s);};})(i)});});showB(opts);qLocked=false;}catch(e){cBg(cP.ctx,700,480,'ERREUR','',e.message,'#ff3b5c');cP.tex.needsUpdate=true;showB([{label:'← Scenarios',col:'#6f8a99',cb:renderSC}]);qLocked=false;}}
     async function onSC(idx,ok,exp,s){if(qLocked)return;qLocked=true;var correct=idx===ok,already=!!myBQ[s.id];cBg(cP.ctx,700,480,correct?'CORRECT !':'RATE',s.title,exp+(correct&&!already?'\n\n+'+s.xp+' XP !':''),correct?'#27e0a0':'#ff3b5c');cP.tex.needsUpdate=true;if(correct&&!already){showXP('+'+s.xp+' XP');if(!isGuest)await syncProg(null,{[s.id]:true});else{myBQ[s.id]=true;myXp=calcXP(myDone,myBQ);}}setTimeout(renderSC,2500);}
 
@@ -568,6 +632,15 @@ function initApp() {
 
 } // fin else config
 
+
+// ── Bouton Retour carte ────────────────────────────
+var homeBtn=document.getElementById('homeBtn');
+if(homeBtn){
+  homeBtn.addEventListener('click',function(){
+    if(typeof renderZones==='function')renderZones();
+  });
+}
+
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
 
 </script>
@@ -578,6 +651,298 @@ if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch
   <button class="vt-btn classic" id="classicModeBtn">Classique</button>
   <button class="vt-btn vr-active" id="vrModeBtn">🥽 VR</button>
 </div>
+
+<script>
+(function(){
+  try{history.pushState({cq:1},"");}catch(e){}
+  var backOv=null;
+  window.cqShowQuit=function(){
+    if(backOv)return;
+    backOv=document.createElement("div");
+    backOv.style.cssText="position:fixed;inset:0;z-index:99998;background:rgba(4,4,10,.92);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;";
+    backOv.innerHTML='<div style="background:#0d0d1a;border:1px solid #2a2a50;border-radius:10px;padding:24px;max-width:280px;text-align:center;">'
+      +'<div style="font-family:\'Press Start 2P\',monospace;font-size:12px;color:#ff3b3b;margin-bottom:16px;">VOULEZ-VOUS QUITTER ?</div>'
+      +'<div style="display:flex;gap:10px;justify-content:center;">'
+      +'<button id="cqQuitYes" style="flex:1;padding:10px;background:#ff3b3b;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">OUI</button>'
+      +'<button id="cqQuitNo" style="flex:1;padding:10px;background:#12121f;color:#00f5ff;border:1px solid #00f5ff;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">NON</button>'
+      +'</div></div>';
+    document.body.appendChild(backOv);
+    document.getElementById("cqQuitYes").addEventListener("click",function(){
+      // Tentatives de fermeture — fonctionnent rarement sur iOS Safari (restriction Apple :
+      // une page ne peut se fermer que si elle a ete ouverte par script). On tente quand meme,
+      // puis on affiche une consigne claire si ca echoue au lieu de laisser la fenetre figee.
+      var closed=false;
+      try{window.open("","_self","");window.close();closed=true;}catch(e){}
+      try{if(!closed)history.go(-(history.length));}catch(e){}
+      setTimeout(function(){
+        if(backOv&&backOv.parentNode){
+          backOv.innerHTML='<div style="background:#0d0d1a;border:1px solid #2a2a50;border-radius:10px;padding:24px;max-width:280px;text-align:center;">'
+            +'<div style="font-family:\'Press Start 2P\',monospace;font-size:11px;color:#00f5ff;margin-bottom:12px;">FERMETURE MANUELLE</div>'
+            +'<div style="font-size:12px;color:#cfe7ee;line-height:1.6;margin-bottom:16px;">iOS ne permet pas de fermer<br>l\'application automatiquement.<br><br>Appuie sur le bouton <b>Accueil</b><br>ou balaie vers le haut pour quitter.</div>'
+            +'<button id="cqQuitOk" style="width:100%;padding:10px;background:#12121f;color:#00f5ff;border:1px solid #00f5ff;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">OK, COMPRIS</button>'
+            +'</div>';
+          var okBtn=document.getElementById("cqQuitOk");
+          if(okBtn)okBtn.addEventListener("click",function(){
+            if(backOv&&backOv.parentNode)backOv.parentNode.removeChild(backOv);
+            backOv=null;
+          });
+        }
+      },350);
+    });
+    document.getElementById("cqQuitNo").addEventListener("click",function(){
+      if(backOv&&backOv.parentNode)backOv.parentNode.removeChild(backOv);
+      backOv=null;
+      try{history.pushState({cq:1},"");}catch(e){}
+    });
+  };
+  window.addEventListener("popstate",window.cqShowQuit);
+  document.addEventListener("DOMContentLoaded",function(){
+    var qb=document.getElementById("quitBtn");
+    if(qb)qb.addEventListener("click",window.cqShowQuit);
+  });
+  // Au cas où le DOM est deja pret (script en fin de body)
+  var qb0=document.getElementById("quitBtn");
+  if(qb0)qb0.addEventListener("click",window.cqShowQuit);
+})();
+</script>
+
+<button id="musicBtn" style="position:fixed;bottom:14px;right:14px;z-index:9000;width:42px;height:42px;border-radius:50%;background:rgba(6,10,16,.85);border:1px solid #1c2c3d;color:#6f8a99;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🔇</button>
+<script>
+(function(){
+  var ctx=null, master=null, running=false, muted=true;
+  try{muted = localStorage.getItem("cq_music_muted")!=="0";}catch(e){}
+
+  // Sequence chiptune retro : basse + arpege, boucle 8 pas
+  var bassNotes=[110,110,146.83,110,130.81,110,146.83,98];
+  var leadNotes=[440,523.25,440,659.25,523.25,440,392,440];
+  var step=0;
+
+  function initAudio(){
+    if(ctx)return;
+    try{
+      ctx=new (window.AudioContext||window.webkitAudioContext)();
+      master=ctx.createGain();
+      master.gain.value=muted?0:0.06;
+      master.connect(ctx.destination);
+    }catch(e){}
+  }
+
+  function playStep(){
+    if(!ctx||muted)return;
+    var t=ctx.currentTime;
+    // Basse (carre)
+    var b=ctx.createOscillator(), bg=ctx.createGain();
+    b.type="square"; b.frequency.value=bassNotes[step%bassNotes.length];
+    bg.gain.setValueAtTime(0.5,t); bg.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+    b.connect(bg); bg.connect(master);
+    b.start(t); b.stop(t+0.24);
+    // Lead (triangle) une fois sur deux
+    if(step%2===0){
+      var l=ctx.createOscillator(), lg=ctx.createGain();
+      l.type="triangle"; l.frequency.value=leadNotes[step%leadNotes.length];
+      lg.gain.setValueAtTime(0.25,t); lg.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+      l.connect(lg); lg.connect(master);
+      l.start(t); l.stop(t+0.2);
+    }
+    step=(step+1)%8;
+  }
+
+  function startLoop(){
+    if(running)return;
+    running=true;
+    setInterval(playStep,240);
+  }
+
+  function toggleMusic(){
+    initAudio();
+    if(ctx&&ctx.state==="suspended")ctx.resume();
+    muted=!muted;
+    try{localStorage.setItem("cq_music_muted",muted?"1":"0");}catch(e){}
+    if(master)master.gain.value=muted?0:0.06;
+    var btn=document.getElementById("musicBtn");
+    if(btn)btn.textContent=muted?"\uD83D\uDD07":"\uD83D\uDD0A";
+    startLoop();
+  }
+
+  // Demarrage sur premiere interaction (politique autoplay navigateurs)
+  var started=false;
+  function onFirstGesture(){
+    if(started)return; started=true;
+    initAudio();
+    startLoop();
+    document.removeEventListener("click",onFirstGesture);
+    document.removeEventListener("touchstart",onFirstGesture);
+  }
+  document.addEventListener("click",onFirstGesture,{once:false});
+  document.addEventListener("touchstart",onFirstGesture,{once:false});
+
+  var mb=document.getElementById("musicBtn");
+  if(mb){
+    mb.textContent=muted?"\uD83D\uDD07":"\uD83D\uDD0A";
+    mb.addEventListener("click",function(e){e.stopPropagation();toggleMusic();});
+  }
+})();
+</script>
+
+<script>
+(function(){
+  var banner=null, modal=null, timerIv=null;
+
+  function ensureBanner(){
+    if(banner)return banner;
+    banner=document.createElement('div');
+    banner.id='sdBannerVR';
+    banner.style.cssText='position:fixed;left:50%;top:60px;transform:translateX(-50%);z-index:8000;background:linear-gradient(90deg,#ff2ecb,#b14eff);color:#fff;font-family:monospace;font-size:11px;font-weight:700;padding:9px 16px;border-radius:20px;box-shadow:0 4px 14px rgba(177,78,255,.4);cursor:pointer;display:none;letter-spacing:.03em;max-width:88vw;text-align:center;';
+    document.body.appendChild(banner);
+    banner.addEventListener('click',openChallenge);
+    return banner;
+  }
+
+  async function checkSuddenDeath(){
+    if(!jbKey||!profile)return;
+    try{
+      var res=await fetch('https://api.jsonbin.io/v3/b/'+BIN_ID+'/latest',{headers:{'X-Master-Key':jbKey}});
+      if(!res.ok)return;
+      var rec=(await res.json()).record||{};
+      var ranked=Object.keys(rec).filter(function(k){
+        var v=rec[k];
+        return v&&v.name&&v.type!=='guest'&&k.indexOf('_')!==0;
+      }).map(function(k){return {key:k,name:rec[k].name,xp:rec[k].xp||0};})
+        .sort(function(a,b){return b.xp-a.xp;});
+
+      var b=ensureBanner();
+      if(ranked.length<2||ranked[0].xp===0||ranked[0].xp!==ranked[1].xp){
+        b.style.display='none'; return;
+      }
+      var topxp=ranked[0].xp;
+      var sd=rec._suddenDeath||{};
+      if(sd[topxp]&&sd[topxp].winner){
+        b.style.display='none'; return;
+      }
+      var tied=ranked.filter(function(r){return r.xp===topxp;});
+      var iAmTied=tied.some(function(r){return r.name.toLowerCase()===profile;});
+      if(!iAmTied){ b.style.display='none'; return; }
+
+      var others=tied.filter(function(r){return r.name.toLowerCase()!==profile;}).map(function(r){return r.name;}).join(', ');
+      b.textContent='\u26A1 MORT SUBITE \u2014 \u00E9galit\u00E9 avec '+others+' !';
+      b.dataset.topxp=topxp;
+      b.style.display='block';
+    }catch(e){}
+  }
+
+  function closeModal(){
+    if(modal&&modal.parentNode)modal.parentNode.removeChild(modal);
+    modal=null;
+    if(timerIv){clearInterval(timerIv);timerIv=null;}
+  }
+
+  function openChallenge(){
+    var topxp=banner?banner.dataset.topxp:null;
+    if(!topxp)return;
+    closeModal();
+    modal=document.createElement('div');
+    modal.style.cssText='position:fixed;inset:0;z-index:8500;background:rgba(4,4,10,.94);display:flex;align-items:center;justify-content:center;padding:20px;font-family:monospace;';
+    modal.innerHTML='<div style="background:#0d0d1a;border:2px solid #ff2ecb;border-radius:12px;padding:22px;max-width:340px;width:100%;text-align:center;">'
+      +'<div style="font-size:14px;font-weight:700;color:#ff2ecb;margin-bottom:10px;">\u26A1 D\u00C9FI MORT SUBITE</div>'
+      +'<div id="sdBodyVR" style="font-size:12px;color:#cfe7ee;line-height:1.6;">R\u00E9ponds correctement en moins de 15 secondes pour remporter le d\u00E9partage.</div>'
+      +'<button id="sdStartBtnVR" style="width:100%;padding:12px;margin-top:16px;background:#ff2ecb;color:#fff;border:none;border-radius:8px;font-family:inherit;font-weight:700;cursor:pointer;">COMMENCER</button>'
+      +'<button id="sdCloseBtnVR" style="width:100%;padding:10px;margin-top:8px;background:transparent;border:1px solid #333;color:#6f8a99;border-radius:8px;font-family:inherit;cursor:pointer;">Plus tard</button>'
+      +'</div>';
+    document.body.appendChild(modal);
+    document.getElementById('sdCloseBtnVR').addEventListener('click',closeModal);
+    document.getElementById('sdStartBtnVR').addEventListener('click',function(){ startChallenge(topxp); });
+  }
+
+  async function startChallenge(topxp){
+    var body=document.getElementById('sdBodyVR');
+    var startBtn=document.getElementById('sdStartBtnVR');
+    if(startBtn)startBtn.style.display='none';
+    var closeBtn=document.getElementById('sdCloseBtnVR');
+    if(closeBtn)closeBtn.style.display='none';
+    body.innerHTML='G\u00E9n\u00E9ration de la question...';
+
+    if(!groqKey||groqKey.length<10){
+      body.innerHTML='Cl\u00E9 API Groq requise pour le d\u00E9fi.';
+      return;
+    }
+
+    var topics=['phishing','mots de passe','r\u00E9seaux','Linux','cryptographie','ing\u00E9nierie sociale'];
+    var topic=topics[Math.floor(Math.random()*topics.length)];
+    try{
+      var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},
+        body:JSON.stringify({model:MODEL,max_tokens:300,temperature:0.8,messages:[
+          {role:'user',content:'QCM cybersecurite rapide en francais sur le theme: '+topic+'. JSON UNIQUEMENT: {"q":"...","opts":["...","...","...","..."],"ok":0}'}
+        ]})
+      });
+      if(!resp.ok)throw new Error('HTTP '+resp.status);
+      var data=await resp.json();
+      var raw=(data.choices[0].message.content||'').replace(/```json|```/g,'').trim();
+      var d=JSON.parse(raw);
+
+      var timeLeft=15;
+      var L=['A','B','C','D'];
+      body.innerHTML='<div style="font-size:13px;color:#fff;margin-bottom:10px;">'+d.q+'</div>'
+        +'<div id="sdTimerBarVR" style="height:5px;background:#2a2a50;border-radius:3px;overflow:hidden;margin-bottom:12px;"><div id="sdTimerFillVR" style="height:100%;width:100%;background:#ff2ecb;transition:width 1s linear;"></div></div>'
+        +'<div id="sdOptsVR"></div>';
+      var optsC=document.getElementById('sdOptsVR');
+      d.opts.slice(0,4).forEach(function(o,i){
+        var b=document.createElement('button');
+        b.style.cssText='display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;background:rgba(255,255,255,.05);border:1px solid #2a2a50;border-radius:7px;color:#cfe7ee;font-size:12px;cursor:pointer;font-family:inherit;';
+        b.textContent=L[i]+' \u00B7 '+o;
+        b.addEventListener('click',function(){ submitAnswer(i,d.ok,topxp); });
+        optsC.appendChild(b);
+      });
+
+      timerIv=setInterval(function(){
+        timeLeft--;
+        var fill=document.getElementById('sdTimerFillVR');
+        if(fill)fill.style.width=Math.max(0,(timeLeft/15*100))+'%';
+        if(timeLeft<=0){
+          clearInterval(timerIv); timerIv=null;
+          submitAnswer(-1,d.ok,topxp);
+        }
+      },1000);
+
+    }catch(e){
+      body.innerHTML='Erreur: '+e.message;
+    }
+  }
+
+  async function submitAnswer(idx,ok,topxp){
+    if(timerIv){clearInterval(timerIv);timerIv=null;}
+    var body=document.getElementById('sdBodyVR');
+    var correct=(idx===ok);
+    if(!correct){
+      if(body)body.innerHTML='<div style="color:#ff3b5c;font-weight:700;">'+(idx===-1?'Temps ecoule !':'Mauvaise reponse.')+'</div><div style="font-size:11px;color:#6f8a99;margin-top:8px;">Tu peux retenter depuis la banniere.</div>';
+      return;
+    }
+    if(body)body.innerHTML='<div style="color:#27e0a0;font-weight:700;">Correct ! Enregistrement...</div>';
+    try{
+      var r=await fetch('https://api.jsonbin.io/v3/b/'+BIN_ID+'/latest',{headers:{'X-Master-Key':jbKey}});
+      var rec=(await r.json()).record||{};
+      if(!rec._suddenDeath)rec._suddenDeath={};
+      if(!rec._suddenDeath[topxp]||!rec._suddenDeath[topxp].winner){
+        rec._suddenDeath[topxp]={winner:profile,wonAt:Date.now()};
+        await fetch('https://api.jsonbin.io/v3/b/'+BIN_ID,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':jbKey},body:JSON.stringify(rec)});
+        if(body)body.innerHTML='<div style="color:#27e0a0;font-weight:700;">\uD83C\uDFC6 D\u00E9partage remport\u00E9 !</div><div style="font-size:11px;color:#6f8a99;margin-top:8px;">Tu es d\u00E9sormais devant au d\u00E9partage.</div>';
+      }else{
+        if(body)body.innerHTML='<div style="color:#ffb020;">'+rec._suddenDeath[topxp].winner+' a d\u00E9j\u00E0 remport\u00E9 ce d\u00E9partage.</div>';
+      }
+      var b=document.getElementById('sdBannerVR');
+      if(b)b.style.display='none';
+      setTimeout(closeModal,2500);
+    }catch(e){
+      if(body)body.innerHTML='Erreur sauvegarde: '+e.message;
+    }
+  }
+
+  // Polling
+  setTimeout(checkSuddenDeath,3000);
+  setInterval(checkSuddenDeath,25000);
+})();
+</script>
 
 </body>
 </html>
